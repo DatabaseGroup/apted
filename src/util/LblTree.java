@@ -27,9 +27,12 @@ import java.util.Vector;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.MutableTreeNode;
 
-// Referenced classes of package util:
-//            FormatUtilities
-
+/**
+ * Tree implementation.
+ * 
+ * @author Nikolaus Augsten and Mateusz Pawlik
+ *
+ */
 public class LblTree extends DefaultMutableTreeNode
     implements Comparable
 {

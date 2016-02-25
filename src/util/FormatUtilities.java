@@ -23,6 +23,12 @@ package util;
 
 import java.util.*;
 
+/**
+ * Various formatting utilities.
+ * 
+ * @author Nikolaus Augsten
+ *
+ */
 public class FormatUtilities
 {
 

@@ -25,6 +25,12 @@ import java.util.*;
 import util.LabelDictionary;
 import util.LblTree;
 
+/**
+ * Stores and serves various information about the tree, subtrees and nodes.
+ * 
+ * @author Mateusz Pawlik
+ *
+ */
 public class InfoTree_PLUS
 {
 

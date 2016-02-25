@@ -24,6 +24,12 @@ package util;
 import java.util.Hashtable;
 import java.util.Map;
 
+/**
+ * Dictionary to store labels to integers mappings.
+ * 
+ * @author Nikolaus Augsten
+ *
+ */
 public class LabelDictionary
 {
 
