@@ -31,16 +31,27 @@ import java.util.Stack;
 import util.*;
 
 /**
- * This is a version of RTED algorithm from IS paper with:
- *   - Optimal strategy with all paths.
- *   - Single- two-node single path functions.
- *   - Zhang and Shasha algorithm for executing left and right paths (as in VLDB paper).
- *   - For any other path \Delta^A from TODS paper is used.
+ * Implements APTED algorithm from [2].
+ *
+ *  - Optimal strategy with all paths.
+ *  - Single-node single path function supports currently only unit cost.
+ *  - Two-node single path function not included.
+ *  - \Delta^L and \Delta^R based on Zhang and Shasha's algorithm for executing
+ *     left and right paths (as in [3]). If only left and right paths are used
+ *     in the strategy, the memory usage is reduced by one quadratic array.
+ *  - For any other path \Delta^A from [1] is used.
  * 
+ *  [1] M. Pawlik and N. Augsten. Efficient Computation of the Tree Edit 
+ *      Distance. ACM Transactions on Database Systems (TODS) 40(1). 2015.
+ *  [2] M. Pawlik and N. Augsten. Tree edit distance: Robust and memory-
+ *      efficient. Information Systems 56. 2016.
+ *  [3] M. Pawlik and N. Augsten. RTED: A Robust Algorithm for the Tree Edit 
+ *      Distance. PVLDB 5(4). 2011.
+ *
  * @author Mateusz Pawlik
  *
  */
-public class RTED_IS extends TreeEditDistance
+public class APTED
 {
 	private static final byte LEFT = 0;
     private static final byte RIGHT = 1;
@@ -61,123 +72,32 @@ public class RTED_IS extends TreeEditDistance
     private float costDel;
     private float costIns;
     private float costMatch;
-    private boolean ifWarmupPhase;
-    private boolean ifMeasureMemory;
-    private long precomputationMaxMemory;
-    private long strategyMaxMeory;
-    private long tedMaxMemory;
-    public long maxNonHeapMemory;
-    private long precomputationTime;
-    private long strategyTime;
-    private long tedTime;
     
-    public int leftPathCounter;
-    public int rightPathCounter;
-    public int innerPathCounter;
-    public int singleNodeSpfCounter;
-    public int strElementCounter;// recursive calls of the tree decomposition (pairs of relevant subtrees)
-    
-    public int strRowsCounter;
-    public long optStrCost;
-    
-    private boolean debug;
-
-    public RTED_IS(float delCost, float insCost, float matchCost)
+    public APTED(float delCost, float insCost, float matchCost)
     {
         counter = 0L;
         costDel = delCost;
         costIns = insCost;
         costMatch = matchCost;
-        ifWarmupPhase = false;
-        ifMeasureMemory = false;
-        debug = false;
     }
     
-    private void warmupPhase() throws IOException {
-		for (int i = 1; i <= 6; i++) {
-			BufferedReader in1 = new BufferedReader(new FileReader("datasets/warmup/t" + Integer.valueOf(i) + "a"));
-	        BufferedReader in2 = new BufferedReader(new FileReader("datasets/warmup/t" + Integer.valueOf(i) + "b"));
-	        String line1 = in1.readLine();
-	        String line2 = in2.readLine();
-			LblTree wut1 = LblTree.fromString(line1);
-			LblTree wut2 = LblTree.fromString(line2);
-			init(wut1, wut2);
-			delta = computeOptStrategyUsingAllPathsOn2_memopt_postL(it1, it2);
-			delta = computeOptStrategyUsingAllPathsOn2_memopt_postR(it1, it2);
-			tedInit();
-			computeDistUsingLRHPathsStrArray(it1, it2);
-			in1.close();
-			in2.close();
-		}
-    }
-
-    public double nonNormalizedTreeDist(LblTree t1, LblTree t2)
-    {
-    	
-    	if (debug) System.out.println("START: Warmpup");
-    	
-    	// warm up the methods with JIT optimizations
-    	if (ifWarmupPhase) {
-    		try {
-				warmupPhase();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-    		ifWarmupPhase = false;
-    	}
-    	
-    	if (debug) System.out.println("END: Warmup");
-    	    	
-        precomputationMaxMemory = 0L;
-        strategyMaxMeory = 0L;
-        tedMaxMemory = 0L;
-        precomputationTime = 0L;
-        strategyTime = 0L;
-        tedTime = 0L;
-        
+    public float nonNormalizedTreeDist(LblTree t1, LblTree t2)
+    {    	    	        
         // PRECOMPUTATION
-        if (debug) System.out.println("START: Precomputation");
-        MemoryWatch.resetMaxMemory();
-        TimeWatch.resetTime();
         init(t1, t2);
-        precomputationTime = TimeWatch.measureTime();
-        precomputationMaxMemory = MemoryWatch.getMaxHeap();
-        if (debug) System.out.println("END: Precomputation");
         
-        // STRATEGY COMPUTATION
-        if (debug) System.out.println("START: Strategy computation");
-        MemoryWatch.resetMaxMemory();
-        TimeWatch.resetTime();
+        // STRATEGY COMPUTATION with heuristic described in [2]
         if (it1.lchl < it1.rchl) {
         	delta = computeOptStrategyUsingAllPathsOn2_memopt_postL(it1, it2); 
         } else {
         	delta = computeOptStrategyUsingAllPathsOn2_memopt_postR(it1, it2);
-        }       
-        strategyTime = TimeWatch.measureTime();
-        strategyMaxMeory = MemoryWatch.getMaxHeap();
-        if (debug) System.out.println("END: Strategy computation");
+        }
                
         // TED COMPUTATION
-        if (debug) System.out.println("START: TED computation");
-        MemoryWatch.resetMaxMemory();
-        TimeWatch.resetTime();
         tedInit();
         float result = computeDistUsingLRHPathsStrArray(it1, it2);
-        tedTime = TimeWatch.measureTime();
-        tedMaxMemory = MemoryWatch.getMaxHeap();
-        if (debug) System.out.println("END: TED computation");
-        
-        maxNonHeapMemory = MemoryWatch.getMaxNonHeap();
         
         return result;
-    }
-
-    public float nonNormalizedTreeDist()
-    {
-        if(it1 == null || it2 == null) {
-            System.err.println("No stored trees to compare.");
-        }
-        return computeDistUsingLRHPathsStrArray(it1, it2);
     }
 
     public void init(LblTree t1, LblTree t2)
@@ -189,37 +109,29 @@ public class RTED_IS extends TreeEditDistance
         t2 = null;
         size1 = it1.getSize();
         size2 = it2.getSize();
-        MemoryWatch.suggestGC();
-        MemoryWatch.measureMaxMemory();
     }
 
     private void tedInit()
-    {
-    	leftPathCounter = 0;
-    	rightPathCounter = 0;
-    	innerPathCounter = 0;
-    	singleNodeSpfCounter = 0;
-    	strElementCounter = 0;
-    	
+    {    	
     	initSCounter = 0;
     	initTCounter = 0;
         counter = 0L;
+
+        // Initialize arrays.
         int maxSize = Math.max(size1, size2) + 1;
         q = new float[maxSize];
         fn = new int[maxSize + 1];
         ft = new int[maxSize + 1];
-        for(int x = 0; x < size1; x++)
-        {
+
+        // Compute subtree distances without the root nodes.
+        for(int x = 0; x < size1; x++) {
             int sizeX = it1.getSizes(x);
-            for(int y = 0; y < size2; y++)
-            {
+            for(int y = 0; y < size2; y++) {
                 int sizeY = it2.getSizes(y);
-                if(sizeX == 1 || sizeY == 1)
-                {
+                if(sizeX == 1 || sizeY == 1) {
                     delta[x][y] = (sizeX - 1) * costDel + (sizeY - 1) * costIns;
                 }
             }
-
         }
 
     }
@@ -277,16 +189,9 @@ public class RTED_IS extends TreeEditDistance
 	Stack<float[]> rowsToReuse_L = new Stack<float[]>();
 	Stack<float[]> rowsToReuse_R = new Stack<float[]>();
 	Stack<float[]> rowsToReuse_I = new Stack<float[]>();
-	strRowsCounter = 0;
-	
-	MemoryWatch.measureMaxMemory();
-	
-	if (debug) System.out.println(" - strategy data structures initialized");
-	
+			
     for(int v = 0; v < size1; v++)
-    {
-    	if (debug && v%10000==0) System.out.println(" - strategy at " + v);
-    	
+    {    	
     	v_in_preL = postL_to_preL_1[v];
     	
     	is_v_leaf = it1.isLeaf(v_in_preL);
@@ -317,15 +222,12 @@ public class RTED_IS extends TreeEditDistance
 		cost_Rpointer_v = cost1_R[v];
 		cost_Ipointer_v = cost1_I[v];
 		
-//        int parentNode = it1.getParents(v);
         if(parent_v_preL != -1 && cost1_L[parent_v_postL] == null)
         {
 			if (rowsToReuse_L.isEmpty()) {
 				cost1_L[parent_v_postL] = new float[size2];
 				cost1_R[parent_v_postL] = new float[size2];
 				cost1_I[parent_v_postL] = new float[size2];
-				
-				strRowsCounter++;
 			} else {
 				cost1_L[parent_v_postL] = rowsToReuse_L.pop();
 				cost1_R[parent_v_postL] = rowsToReuse_R.pop();
@@ -364,40 +266,40 @@ public class RTED_IS extends TreeEditDistance
             strategyPath = -1;
             float tmpCost = 0x7fffffffffffffffL;
             
-            if (size_v <= 2 || size_w <= 2) { // USE NEW SINGLE_PATH FUNCTIONS FOR SMALL SUBTREES
+            if (size_v <= 1 || size_w <= 1) { // USE NEW SINGLE_PATH FUNCTIONS FOR SMALL SUBTREES
             	minCost = Math.max(size_v, size_w);
             } else {
 	            tmpCost = (float) size_v * (float) pre2krSum2[w_in_preL] + cost_Lpointer_v[w];
 	            if(tmpCost < minCost)
 	            {
 	                minCost = tmpCost;
-	                strategyPath = leftPath_v;//-(it1.getPreR_to_PreL((it1.getPreL_to_PreR(v) + it1.getSizes(v)) - 1) + 1);
+	                strategyPath = leftPath_v;
 	            }
-	            tmpCost = (float) size_v * (float) pre2revkrSum2[w_in_preL] + cost_Rpointer_v[w];//(float)it1.getSizes(v) * (float)it2.getPreL_to_Rev_KR_Sum(w) + cost1_R[v][w];
+	            tmpCost = (float) size_v * (float) pre2revkrSum2[w_in_preL] + cost_Rpointer_v[w];
 	            if(tmpCost < minCost)
 	            {
 	                minCost = tmpCost;
-	                strategyPath = rightPath_v;//((v + it1.getSizes(v)) - 1) + 1;
+	                strategyPath = rightPath_v;
 	            }
-	            tmpCost = (float) size_v * (float) pre2descSum2[w_in_preL] + cost_Ipointer_v[w];//(float)it1.getSizes(v) * (float)it2.getPreL_to_Desc_Sum(w) + cost1_I[v][w];
+	            tmpCost = (float) size_v * (float) pre2descSum2[w_in_preL] + cost_Ipointer_v[w];
 	            if(tmpCost < minCost)
 	            {
 	                minCost = tmpCost;
 	                strategyPath = (int)strategypointer_v[w_in_preL] + 1;
 	            }
-	            tmpCost = (float) size_w * (float) krSum_v + cost2_L[w];//(float)it2.getSizes(w) * (float)it1.getPreL_to_KR_Sum(v) + cost2_L[w];
+	            tmpCost = (float) size_w * (float) krSum_v + cost2_L[w];
 	            if(tmpCost < minCost)
 	            {
 	                minCost = tmpCost;
-	                strategyPath = -(preR_to_preL_2[preL_to_preR_2[w_in_preL] + size_w - 1] + pathIDOffset + 1);//-(it2.getPreR_to_PreL((it2.getPreL_to_PreR(w) + it2.getSizes(w)) - 1) + pathIDOffset + 1);
+	                strategyPath = -(preR_to_preL_2[preL_to_preR_2[w_in_preL] + size_w - 1] + pathIDOffset + 1);
 	            }
-	            tmpCost = (float) size_w * (float) revkrSum_v + cost2_R[w];//(float)it2.getSizes(w) * (float)it1.getPreL_to_Rev_KR_Sum(v) + cost2_R[w];
+	            tmpCost = (float) size_w * (float) revkrSum_v + cost2_R[w];
 	            if(tmpCost < minCost)
 	            {
 	                minCost = tmpCost;
-	                strategyPath = w_in_preL + size_w - 1 + pathIDOffset + 1;//((w + it2.getSizes(w)) - 1) + pathIDOffset + 1;
+	                strategyPath = w_in_preL + size_w - 1 + pathIDOffset + 1;
 	            }
-	            tmpCost = (float) size_w * (float) descSum_v + cost2_I[w];//(float)it2.getSizes(w) * (float)it1.getPreL_to_Desc_Sum(v) + cost2_I[w];
+	            tmpCost = (float) size_w * (float) descSum_v + cost2_I[w];
 	            if(tmpCost < minCost)
 	            {
 	                minCost = tmpCost;
@@ -405,7 +307,6 @@ public class RTED_IS extends TreeEditDistance
 	            }
             }
             
-//            parentNode = it1.getParents(v);
             if(parent_v_preL != -1)
             {
                 cost_Rpointer_parent_v[w] += minCost;
@@ -425,7 +326,6 @@ public class RTED_IS extends TreeEditDistance
                 else
                     cost_Lpointer_parent_v[w] += minCost;
             }
-//            parent_w = pre2parent2[w];
             if(parent_w_preL != -1)
             {
                 cost2_R[parent_w_postL] += minCost;
@@ -458,10 +358,6 @@ public class RTED_IS extends TreeEditDistance
         }
         	
     }
-    
-    MemoryWatch.measureMaxMemory();
-    
-    optStrCost = (long)minCost;
 
     return strategy;
 }
@@ -510,16 +406,9 @@ public class RTED_IS extends TreeEditDistance
 		Stack<float[]> rowsToReuse_L = new Stack<float[]>();
 		Stack<float[]> rowsToReuse_R = new Stack<float[]>();
 		Stack<float[]> rowsToReuse_I = new Stack<float[]>();
-		strRowsCounter = 0;
-        
-		if (debug) System.out.println(" - strategy data structures initialized");
-		
-		MemoryWatch.measureMaxMemory();
-		
+        		
         for(int v = size1 - 1; v >= 0; v--)
         {
-        	if (debug && v%10000==0) System.out.println(" - strategy at " + v);
-        	
         	is_v_leaf = it1.isLeaf(v);
 			parent_v = pre2parent1[v];
 			
@@ -546,15 +435,12 @@ public class RTED_IS extends TreeEditDistance
 			cost_Rpointer_v = cost1_R[v];
 			cost_Ipointer_v = cost1_I[v];
 			
-//            int parentNode = it1.getParents(v);
             if(parent_v != -1 && cost1_L[parent_v] == null)
             {
                 if (rowsToReuse_L.isEmpty()) {
     				cost1_L[parent_v] = new float[size2];
     				cost1_R[parent_v] = new float[size2];
     				cost1_I[parent_v] = new float[size2];
-    				
-    				strRowsCounter++;
     			} else {
     				cost1_L[parent_v] = rowsToReuse_L.pop();
     				cost1_R[parent_v] = rowsToReuse_R.pop();
@@ -595,33 +481,33 @@ public class RTED_IS extends TreeEditDistance
 	                if(tmpCost < minCost)
 	                {
 	                    minCost = tmpCost;
-	                    strategyPath = leftPath_v;//-(it1.getPreR_to_PreL((it1.getPreL_to_PreR(v) + it1.getSizes(v)) - 1) + 1);
+	                    strategyPath = leftPath_v;
 	                }
-	                tmpCost = (float) size_v * (float) pre2revkrSum2[w] + cost_Rpointer_v[w];//(float)it1.getSizes(v) * (float)it2.getPreL_to_Rev_KR_Sum(w) + cost1_R[v][w];
+	                tmpCost = (float) size_v * (float) pre2revkrSum2[w] + cost_Rpointer_v[w];
 	                if(tmpCost < minCost)
 	                {
 	                    minCost = tmpCost;
-	                    strategyPath = rightPath_v;//((v + it1.getSizes(v)) - 1) + 1;
+	                    strategyPath = rightPath_v;
 	                }
-	                tmpCost = (float) size_v * (float) pre2descSum2[w] + cost_Ipointer_v[w];;//(float)it1.getSizes(v) * (float)it2.getPreL_to_Desc_Sum(w) + cost1_I[v][w];
+	                tmpCost = (float) size_v * (float) pre2descSum2[w] + cost_Ipointer_v[w];
 	                if(tmpCost < minCost)
 	                {
 	                    minCost = tmpCost;
 	                    strategyPath = (int)strategypointer_v[w] + 1;
 	                }
-	                tmpCost = (float) size_w * (float) krSum_v + cost2_L[w];//(float)it2.getSizes(w) * (float)it1.getPreL_to_KR_Sum(v) + cost2_L[w];
+	                tmpCost = (float) size_w * (float) krSum_v + cost2_L[w];
 	                if(tmpCost < minCost)
 	                {
 	                    minCost = tmpCost;
-	                    strategyPath = -(preR_to_preL_2[preL_to_preR_2[w] + size_w - 1] + pathIDOffset + 1);//-(it2.getPreR_to_PreL((it2.getPreL_to_PreR(w) + it2.getSizes(w)) - 1) + pathIDOffset + 1);
+	                    strategyPath = -(preR_to_preL_2[preL_to_preR_2[w] + size_w - 1] + pathIDOffset + 1);
 	                }
-	                tmpCost = (float) size_w * (float) revkrSum_v + cost2_R[w];//(float)it2.getSizes(w) * (float)it1.getPreL_to_Rev_KR_Sum(v) + cost2_R[w];
+	                tmpCost = (float) size_w * (float) revkrSum_v + cost2_R[w];
 	                if(tmpCost < minCost)
 	                {
 	                    minCost = tmpCost;
-	                    strategyPath = w + size_w - 1 + pathIDOffset + 1;//((w + it2.getSizes(w)) - 1) + pathIDOffset + 1;
+	                    strategyPath = w + size_w - 1 + pathIDOffset + 1;
 	                }
-	                tmpCost = (float) size_w * (float) descSum_v + cost2_I[w];//(float)it2.getSizes(w) * (float)it1.getPreL_to_Desc_Sum(v) + cost2_I[w];
+	                tmpCost = (float) size_w * (float) descSum_v + cost2_I[w];
 	                if(tmpCost < minCost)
 	                {
 	                    minCost = tmpCost;
@@ -629,7 +515,6 @@ public class RTED_IS extends TreeEditDistance
 	                }
                 }
                 
-//                parentNode = it1.getParents(v);
                 if(parent_v != -1)
                 {
                     cost_Lpointer_parent_v[w] += minCost;
@@ -681,16 +566,10 @@ public class RTED_IS extends TreeEditDistance
     			rowsToReuse_I.push(cost1_I[v]);
         	}
         }
-        
-        MemoryWatch.measureMaxMemory();
-        
-        optStrCost = (long)minCost;
-        
+
         return strategy;
     }
     
-    
-
     private float computeDistUsingLRHPathsStrArray(InfoTree_PLUS it1, InfoTree_PLUS it2)
     {
     	int currentSubtree1 = it1.getCurrentNode();
@@ -701,18 +580,12 @@ public class RTED_IS extends TreeEditDistance
         // SINGLE-NODE SUBTREE
 		if ((subtreeSize1 == 1 || subtreeSize2 == 1)) {
 
-			if (debug) System.out.println(" - ted at (1N) " + it1.getCurrentNode() + "," + it2.getCurrentNode());
-			
-			singleNodeSpfCounter++;
-
 			if (it1.getCurrentNode() > 0 || it2.getCurrentNode() > 0) {
 				return -1;
 			} else {
 				float result = Math.max(it1.getSizes(currentSubtree1), it2.getSizes(currentSubtree2));
 				boolean matchFound = false;
 				
-				// MEMORY - skip distance computation
-				if (!ifMeasureMemory)
 				for (int i = currentSubtree1; i < currentSubtree1 + it1.sizes[currentSubtree1]; i++) {
 					for (int j = currentSubtree2; j < currentSubtree2 + it2.sizes[currentSubtree2]; j++) {
 						if (!matchFound)
@@ -720,71 +593,13 @@ public class RTED_IS extends TreeEditDistance
 						counter++;
 					}
 				}
-				return result += (matchFound ? -1.0D : 0.0D); // unit cost
+                // TODO: modify to custom costs
+                // unit cost only
+				return result += (matchFound ? -1.0D : 0.0D); 
 			}
 		}
 		// END
-		
-		// TWO-NODE SUBTREE
-		if ((subtreeSize1 == 2 || subtreeSize2 == 2)) {
-			
-			if (debug) System.out.println(" - ted at (2N) " + it1.getCurrentNode() + "," + it2.getCurrentNode());
-			
-			InfoTree_PLUS bigTree, smallTree;
-			if (subtreeSize1 == 2) {
-				smallTree = it1;
-				bigTree = it2;
-			} else {
-				smallTree = it2;
-				bigTree = it1;
-			}
-			int btCurrentSubtree = bigTree.getCurrentNode();
-			int smCurrentSubtree = smallTree.getCurrentNode();
-			int l2 = smallTree.labels[smCurrentSubtree];
-			int l1 = smallTree.labels[smCurrentSubtree + 1];
-			boolean[][] match = new boolean[bigTree.sizes[btCurrentSubtree]][3];
-			MemoryWatch.measureMaxMemory();
-			int offset = btCurrentSubtree;
-			
-			// MEMORY - skip distance computation
-			if (!ifMeasureMemory)
-			for (int i = btCurrentSubtree + bigTree.sizes[btCurrentSubtree] - 1; i >= btCurrentSubtree; i--) {
-				if (bigTree.sizes[i] > 1) { // if size of subtree is 1, then without its root node its 0, and it has been precomputed in tedInit()
-					if(subtreeSize1 == 2) {
-						delta[smCurrentSubtree][i] = bigTree.sizes[i] + (match[i-offset][0] ? -2 : -1); // subtree without root node
-		            } else {
-		            	delta[i][smCurrentSubtree] = bigTree.sizes[i] + (match[i-offset][0] ? -2 : -1); // subtree without root node
-		            }
-				}
-				if (bigTree.labels[i] == l2 && match[i-offset][0]) {
-//					return bigTree.sizes[btCurrentSubtree] - 2;
-					match[i-offset][2] = true;
-				}
-				if (bigTree.labels[i] == l1) {
-					match[i-offset][0] = true; 
-				}
-				if (bigTree.labels[i] == l2) {
-					match[i-offset][1] = true; 
-				}
-				if (i > btCurrentSubtree) {
-					match[bigTree.parents[i]-offset][0] = match[bigTree.parents[i]-offset][0] || match[i-offset][0];
-					match[bigTree.parents[i]-offset][1] = match[bigTree.parents[i]-offset][1] || match[i-offset][1];
-					match[bigTree.parents[i]-offset][2] = match[bigTree.parents[i]-offset][2] || match[i-offset][2];
-				}
-				counter++;
-			}
-			if (match[btCurrentSubtree-offset][2]) {
-				return bigTree.sizes[btCurrentSubtree] - 2;
-			}
-			else if (match[btCurrentSubtree-offset][0] || match[btCurrentSubtree-offset][1]) {
-				return bigTree.sizes[btCurrentSubtree] - 1;
-			}
-			else {
-				return bigTree.sizes[btCurrentSubtree];
-			}
-		}
-		// END
-    	
+		    	
         int strategyPathID = (int)delta[currentSubtree1][currentSubtree2];
                 
         byte strategyPathType = -1;
@@ -814,9 +629,7 @@ public class RTED_IS extends TreeEditDistance
             it1.setCurrentNode(currentSubtree1);
             it1.setSwitched(false);
             it2.setSwitched(false);
-            
-            if (debug) System.out.println(" - ted at " + it1.getCurrentNode() + "," + it2.getCurrentNode());
-            
+                        
             if (strategyPathType == 0) {
             	return spfL(it1, it2);
             }
@@ -847,9 +660,7 @@ public class RTED_IS extends TreeEditDistance
         it2.setCurrentNode(currentSubtree2);
         it1.setSwitched(true);
         it2.setSwitched(true);
-        
-        if (debug) System.out.println(" - ted at " + it1.getCurrentNode() + "," + it2.getCurrentNode());
-      
+              
         if (strategyPathType == 0) {
         	return spfL(it2, it1);
         }
@@ -861,9 +672,7 @@ public class RTED_IS extends TreeEditDistance
 
     
     private float spfWithPathID_opt_mem(InfoTree_PLUS it1, InfoTree_PLUS it2, int pathID, byte pathType)
-    {
-    	innerPathCounter++;
-    	
+    {    	
     	boolean treesSwitched = it1.isSwitched();
     	    	
     	int[] it2labels = it2.labels;
@@ -871,14 +680,7 @@ public class RTED_IS extends TreeEditDistance
     	
         int currentSubtreePreL1 = it1.getCurrentNode();
         int currentSubtreePreL2 = it2.getCurrentNode();
-        
-        // MEMORY
-        if (it1.parents[currentSubtreePreL1] <= 0 || it2.parents[currentSubtreePreL2] <= 0) {
-        	TimeWatch.pause();
-        	MemoryWatch.suggestGC();
-        	TimeWatch.resume();
-        }
-        
+                
         int currentForestSize1 = 0;
         int currentForestSize2 = 0;
         int tmpForestSize1 = 0;
@@ -894,9 +696,9 @@ public class RTED_IS extends TreeEditDistance
         float sp3 = 0;
         int startPathNode = -1;
         int endPathNode = pathID;
-        int it1PreLoff = endPathNode;//currentSubtreePreL1;
+        int it1PreLoff = endPathNode;
         int it2PreLoff = currentSubtreePreL2;
-        int it1PreRoff = it1.getPreL_to_PreR(endPathNode);//it1.getPreL_to_PreR(it1PreLoff);
+        int it1PreRoff = it1.getPreL_to_PreR(endPathNode);
         int it2PreRoff = it2.getPreL_to_PreR(it2PreLoff);
         
         // variable declarations which were inside the loops
@@ -909,11 +711,9 @@ public class RTED_IS extends TreeEditDistance
         float[] sp1spointer,sp2spointer,sp3spointer,sp3deltapointer,swritepointer,sp1tpointer,sp3tpointer;
         byte sp1source,sp3source;
         
-        // MEMORY - skip distance computation
-        if (!ifMeasureMemory)
         for(; endPathNode >= currentSubtreePreL1; endPathNode = it1.getParents(endPathNode))
         {
-        	it1PreLoff = endPathNode;//currentSubtreePreL1;
+        	it1PreLoff = endPathNode;
             it1PreRoff = it1.getPreL_to_PreR(endPathNode);
             
             rFlast = -1;
@@ -991,7 +791,7 @@ public class RTED_IS extends TreeEditDistance
                         
                         sp1spointer = s[(lF + 1) - it1PreLoff];
                         sp2spointer = s[lF - it1PreLoff];
-                        sp3spointer = s[0];//s[(lF + lFSubtreeSize) - it1PreLoff]; // for smaller size of s
+                        sp3spointer = s[0];
                         sp3deltapointer = treesSwitched ? null : delta[lF];
                         swritepointer = s[lF - it1PreLoff];
                                                
@@ -1008,7 +808,7 @@ public class RTED_IS extends TreeEditDistance
                             if(lFIsLeftSiblingOfCurrentPathNode) sp3source = 3;
                         }
                         
-                        if (sp3source == 1) sp3spointer = s[(lF + lFSubtreeSize) - it1PreLoff]; // for smaller size of s
+                        if (sp3source == 1) sp3spointer = s[(lF + lFSubtreeSize) - it1PreLoff];
                         
                         if(currentForestSize2 + 1 == 1) sp2 = currentForestSize1 * costDel;
                         else sp2 = q[lF];
@@ -1091,7 +891,7 @@ public class RTED_IS extends TreeEditDistance
                             q[lF] = s[lF - it1PreLoff][(parent_of_rG_in_preL + 1) - it2PreLoff];
                         }
                     }
-                    // TODO first pointers can be precomputed
+                    // TODO: first pointers can be precomputed
                     for(int lG = lGfirst; lG >= lGlast; lG = ft[lG]) {
                         t[lG - it2PreLoff][rG - it2PreRoff] = s[lFlast - it1PreLoff][lG - it2PreLoff];
                     }
@@ -1158,7 +958,7 @@ public class RTED_IS extends TreeEditDistance
                         
                         sp1spointer = s[(rF + 1) - it1PreRoff];
                         sp2spointer = s[rF - it1PreRoff];
-                        sp3spointer = s[0];//s[(rF + rFSubtreeSize) - it1PreRoff]; // for smaller size of s
+                        sp3spointer = s[0];
                         sp3deltapointer = treesSwitched ? null : delta[rF_in_preL];
                         swritepointer = s[rF - it1PreRoff];
                         sp1tpointer = t[lG - it2PreLoff];
@@ -1177,7 +977,7 @@ public class RTED_IS extends TreeEditDistance
                             if (rFIsRightSiblingOfCurrentPathNode) sp3source = 3;
                         }
                         
-                        if (sp3source == 1) sp3spointer = s[(rF + rFSubtreeSize) - it1PreRoff]; // for smaller size of s
+                        if (sp3source == 1) sp3spointer = s[(rF + rFSubtreeSize) - it1PreRoff];
                         
                         if (currentForestSize2 + 1 == 1) sp2 = currentForestSize1 * costDel;
                         else sp2 = q[rF];
@@ -1262,7 +1062,7 @@ public class RTED_IS extends TreeEditDistance
                             q[rF] = s[rF - it1PreRoff][(parent_of_lG_in_preR + 1) - it2PreRoff];
                         }
                     }
-                 // TODO first pointers can be precomputed
+                 // TODO: first pointers can be precomputed
                     for (int rG = rGfirst; rG >= rGlast; rG = ft[rG]) {
                         t[lG - it2PreLoff][rG - it2PreRoff] = s[rFlast - it1PreRoff][rG - it2PreRoff];
                     }
@@ -1271,24 +1071,12 @@ public class RTED_IS extends TreeEditDistance
             startPathNode = endPathNode;
         }
         
-        // MEMORY
-        if (it1.parents[currentSubtreePreL1] <= 0 || it2.parents[currentSubtreePreL2] <= 0)  MemoryWatch.measureMaxMemory();
-        
         return minCost;
     }
     
     // ===================== BEGIN spfL
     private float spfL(InfoTree_PLUS it1, InfoTree_PLUS it2) {
-    	
-    	leftPathCounter++;
-    	
-    	// MEMORY
-    	if (it1.parents[it1.getCurrentNode()] <= 0 || it2.parents[it2.getCurrentNode()] <= 0) {
-    		TimeWatch.pause();
-        	MemoryWatch.suggestGC();
-        	TimeWatch.resume();
-    	}
-    	
+    	    	    	
     	int[] keyRoots = new int[it2.sizes[it2.getCurrentNode()]];
     	
     	Arrays.fill(keyRoots, -1);
@@ -1298,14 +1086,9 @@ public class RTED_IS extends TreeEditDistance
     	   
     	float[][] forestdist = new float[it1.sizes[it1.getCurrentNode()]+1][it2.sizes[it2.getCurrentNode()]+1];
     	 	
-    	// MEMORY - skip distance computation
-        if (!ifMeasureMemory)
     	for (int i = firstKeyRoot-1; i >= 0; i--) {
     		treeEditDist(it1, it2, it1.getCurrentNode(), keyRoots[i], forestdist);
     	}
-    	
-    	// MEMORY
-    	if (it1.parents[it1.getCurrentNode()] <= 0 || it2.parents[it2.getCurrentNode()] <= 0)  MemoryWatch.measureMaxMemory();
     	
     	return forestdist[it1.sizes[it1.getCurrentNode()]][it2.sizes[it2.getCurrentNode()]];
     }
@@ -1383,16 +1166,7 @@ public class RTED_IS extends TreeEditDistance
     
     // ===================== BEGIN spfR
     private float spfR(InfoTree_PLUS it1, InfoTree_PLUS it2) {
-    	
-    	rightPathCounter++;
-    	
-    	// MEMORY
-    	if (it1.parents[it1.getCurrentNode()] <= 0 || it2.parents[it2.getCurrentNode()] <= 0) {
-    		TimeWatch.pause();
-        	MemoryWatch.suggestGC();
-        	TimeWatch.resume();
-    	}
-    	
+    	    	    	
     	int[] revKeyRoots = new int[it2.sizes[it2.getCurrentNode()]];
     	    	
     	Arrays.fill(revKeyRoots, -1);
@@ -1402,14 +1176,9 @@ public class RTED_IS extends TreeEditDistance
     	   
     	float[][] forestdist = new float[it1.sizes[it1.getCurrentNode()]+1][it2.sizes[it2.getCurrentNode()]+1];
     	
-    	// MEMORY - skip distance computation
-        if (!ifMeasureMemory)
     	for (int i = firstKeyRoot-1; i >= 0; i--) {
     		revTreeEditDist(it1, it2, it1.getCurrentNode(), revKeyRoots[i], forestdist);
     	}
-    	
-    	// MEMORY
-    	if (it1.parents[it1.getCurrentNode()] <= 0 || it2.parents[it2.getCurrentNode()] <= 0) MemoryWatch.measureMaxMemory();
     	
     	return forestdist[it1.sizes[it1.getCurrentNode()]][it2.sizes[it2.getCurrentNode()]];
     }
@@ -1524,65 +1293,6 @@ public class RTED_IS extends TreeEditDistance
         this.costDel = costDel;
         this.costIns = costIns;
         this.costMatch = costMatch;
-    }
-    
-    public void setIfWarmupPhase(boolean value)
-    {
-        ifWarmupPhase = value;
-    }
-    
-    public void setMeasureMemory(boolean value)
-    {
-    	ifMeasureMemory = true;
-        MemoryWatch.setActive(value);
-    }
-    
-    public void setDebug(boolean value) {
-    	debug = value;
-    }
-
-    public long getPrecomputationMaxMemory()
-    {
-        return precomputationMaxMemory;
-    }
-
-    public long getStrategyMaxMemory()
-    {
-        return strategyMaxMeory;
-    }
-
-    public long getTedMaxMemory()
-    {
-        return tedMaxMemory;
-    }
-    
-    public long getNonHeapMemory() {
-    	return maxNonHeapMemory;
-    }
-
-    public long getPrecomputationTime()
-    {
-        return precomputationTime;
-    }
-
-    public long getStrategyTime()
-    {
-        return strategyTime;
-    }
-
-    public long getTedTime()
-    {
-        return tedTime;
-    }
-
-    public long getCounter()
-    {
-        return counter;
-    }
-    
-    public long getRowsCounter()
-    {
-        return strRowsCounter;
     }
 
     public InfoTree_PLUS getIt1()
