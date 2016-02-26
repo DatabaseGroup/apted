@@ -474,7 +474,7 @@ public class APTED
                 strategyPath = -1;
                 float tmpCost = 0x7fffffffffffffffL;
                 
-                if (size_v <= 2 || size_w <= 2) { // USE NEW SINGLE_PATH FUNCTIONS FOR SMALL SUBTREES
+                if (size_v <= 1 || size_w <= 1) { // USE NEW SINGLE_PATH FUNCTIONS FOR SMALL SUBTREES
                 	minCost = Math.max(size_v, size_w);
                 } else {
 	                tmpCost = (float) size_v * (float) pre2krSum2[w] + cost_Lpointer_v[w];
