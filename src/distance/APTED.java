@@ -579,24 +579,19 @@ public class APTED
     	
         // SINGLE-NODE SUBTREE
 		if ((subtreeSize1 == 1 || subtreeSize2 == 1)) {
-
-			if (it1.getCurrentNode() > 0 || it2.getCurrentNode() > 0) {
-				return -1;
-			} else {
-				float result = Math.max(it1.getSizes(currentSubtree1), it2.getSizes(currentSubtree2));
-				boolean matchFound = false;
-				
-				for (int i = currentSubtree1; i < currentSubtree1 + it1.sizes[currentSubtree1]; i++) {
-					for (int j = currentSubtree2; j < currentSubtree2 + it2.sizes[currentSubtree2]; j++) {
-						if (!matchFound)
-							matchFound = it1.labels[i] == it2.labels[j];
-						counter++;
-					}
+			float result = Math.max(it1.getSizes(currentSubtree1), it2.getSizes(currentSubtree2));
+			boolean matchFound = false;
+			
+			for (int i = currentSubtree1; i < currentSubtree1 + it1.sizes[currentSubtree1]; i++) {
+				for (int j = currentSubtree2; j < currentSubtree2 + it2.sizes[currentSubtree2]; j++) {
+					if (!matchFound)
+						matchFound = it1.labels[i] == it2.labels[j];
+					counter++;
 				}
-                // TODO: modify to custom costs
-                // unit cost only
-				return result += (matchFound ? -1.0D : 0.0D); 
 			}
+            // TODO: modify to custom costs
+            // unit cost only
+			return result += (matchFound ? -1.0D : 0.0D); 
 		}
 		// END
 		    	
