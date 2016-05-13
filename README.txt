@@ -1,5 +1,7 @@
-This is an implementation of the APTED algorithm from [2]. It builds up on the
+This is an implementation of the APTED algorithm from [2]. It builds on the
 works in [1] and [3].
+
+If you want to refer to APTED in a publication, please cite [1] and [2]. 
 
 The source code is published under the MIT licence found in the header of each
 source file.
