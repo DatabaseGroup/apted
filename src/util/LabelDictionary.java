@@ -21,60 +21,51 @@
 
 package util;
 
-import java.util.Hashtable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Dictionary to store labels to integers mappings.
  * 
  * @author Nikolaus Augsten
- *
  */
-public class LabelDictionary
-{
+public class LabelDictionary {
 
-    public LabelDictionary()
-    {
+    public LabelDictionary() {
         newLabelsAllowed = true;
-        count = 0;
-        StrInt = new Hashtable();
-        IntStr = new Hashtable();
+        labelToInt = new HashMap<>();
+        intToLabel = new ArrayList<>();
     }
 
-    public int store(String label)
-    {
-        if(StrInt.containsKey(label))
-            return ((Integer)StrInt.get(label)).intValue();
-        if(!newLabelsAllowed)
-        {
+    public int store(String labelStr) {
+        // for compatibility reasons: used only in InfoTree_PLUS
+        if (labelToInt.containsKey(labelStr))
+            return labelToInt.get(labelStr);
+        if (!newLabelsAllowed)
             return -1;
-        } else
-        {
-            Integer intKey = new Integer(count++);
-            StrInt.put(label, intKey);
-            IntStr.put(intKey, label);
-            return intKey.intValue();
+        else {
+            Integer intKey = intToLabel.size();
+            labelToInt.put(labelStr, intKey); // filling up the array 1-by-1
+            intToLabel.add(labelStr);
+            return intKey;
         }
     }
 
-    public String read(int labelID)
-    {
-        return (String)IntStr.get(new Integer(labelID));
+    public String read(int labelID) {
+        return intToLabel.get(labelID);
     }
 
-    public boolean isNewLabelsAllowed()
-    {
+    public boolean isNewLabelsAllowed() {
         return newLabelsAllowed;
     }
 
-    public void setNewLabelsAllowed(boolean newLabelsAllowed)
-    {
+    public void setNewLabelsAllowed(boolean newLabelsAllowed) {
         this.newLabelsAllowed = newLabelsAllowed;
     }
 
     public static final int KEY_DUMMY_LABEL = -1;
-    private int count;
-    private Map StrInt;
-    private Map IntStr;
+    private Map<String, Integer> labelToInt;
+    private ArrayList<String> intToLabel;
     private boolean newLabelsAllowed;
 }
