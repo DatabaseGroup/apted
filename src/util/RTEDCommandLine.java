@@ -81,6 +81,8 @@ public class RTEDCommandLine {
             "        print verbose output, including tree edit distance, runtime,\n" +
             "        number of relevant subproblems and strategy statistics.\n" +
             "\n" +
+            "    -m, --mapping\n" +
+            "        compute the minimal edit mapping between two trees and print it.\n" +
     		"EXAMPLES\n" +
     		"\n" +
     		"    java -jar APTED.jar -t {a{b}{c}} {a{b{d}}} -c 1 1 0.5\n" +
@@ -146,6 +148,8 @@ public class RTEDCommandLine {
 				i = i+3;
 			} else if (args[i].equals("-v") || args[i].equals("--verbose")) {
 				verbose = true;
+      } else if (args[i].equals("-m") || args[i].equals("--mapping")) {
+        mapping = true;
 			} else {
 				System.out.println(wrongArgumentsMessage);
 				System.exit(0);
@@ -171,6 +175,14 @@ public class RTEDCommandLine {
 		} else {
 			System.out.println(ted);
 		}
+
+    if (mapping) { // TED is computed anyways.
+      LinkedList<int[]> editMapping = rted.computeEditMapping();
+      for (int[] nodeAlignment : editMapping) {
+        System.out.println(nodeAlignment[0] + "->" + nodeAlignment[1]);
+      }
+    }
+
 	}
 		
 	/**
