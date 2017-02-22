@@ -58,6 +58,9 @@ public class InfoTree_PLUS
         preL_to_postR = new int[treeSize];
         postR_to_preL = new int[treeSize];
         
+        postL_to_lld = new int[treeSize]; // Added by Viktor. For mapping computation.
+        postR_to_rld = new int[treeSize];
+
         labels = new int[treeSize];
         preL_to_ln = new int[treeSize];
         preR_to_ln = new int[treeSize];
@@ -266,6 +269,28 @@ public class InfoTree_PLUS
                 currentLeaf = i;
             }
             
+            // This block stores leftmost leaf descendants for each node
+            // indexed in postorder. Used for mapping computation.
+            // Added by Victor.
+            int postl = i; // Assume that the for loop iterates postorder.
+            int preorder = postL_to_preL[i];
+            if (sizes[preorder] == 1)
+                postL_to_lld[postl] = postl;
+            else
+                postL_to_lld[postl] = postL_to_lld[preL_to_postL[children[preorder][0]]];
+            
+            // This block stores rightmost leaf descendants for each node
+            // indexed in right-to-left postorder.
+            // [TODO] Implement revpost2_RLD, use both instead of APTED.getLLD
+            //        and APTED.gerRLD methods, remove these method.
+            //        Result: faster lookup of these values.
+            int postr = i; // Assume that the for loop iterates reversed postorder.
+            preorder = postR_to_preL[postr];
+            if (sizes[preorder] == 1)
+                postR_to_rld[postr] = postr;
+            else
+                postR_to_rld[postr] = postR_to_rld[preL_to_postR[children[preorder][children[preorder].length-1]]];
+
             //lchl and rchl TODO: there are no values for parent node
             if (sizes[i] == 1) {
             	int parent = parents[i];
@@ -329,6 +354,10 @@ public class InfoTree_PLUS
     public int preL_to_rev_kr_sum[];
     public int preL_to_desc_sum[];
     
+    // Added by Victor. From the implementation of RTED for mapping computation.
+    public int postL_to_lld[];
+    public int postR_to_rld[];
+
     public int preL_to_postL[];
     public int postL_to_preL[];
     
