@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Stack;
 
 import util.*;
@@ -98,6 +99,138 @@ public class APTED
         float result = computeDistUsingLRHPathsStrArray(it1, it2);
         
         return result;
+    }
+
+    // Added by Victor. Pasted straight from RTED.
+    public LinkedList<int[]> computeEditMapping() {
+
+        // initialize tree and forest distance arrays
+        // [TODO] treedist differs from delta by one index.
+        float[][] treedist = new float[size1 + 1][size2 + 1];
+        float[][] forestdist = new float[size1 + 1][size2 + 1];
+
+        boolean rootNodePair = true;
+
+        // [TODO] These costs seem incorrect. Shouldn't they be sizes of i and j?
+        for (int i = 0; i < size1; i++) {
+            treedist[i][0] = i*costDel;
+        }
+        for (int j = 0; j < size2; j++) {
+            treedist[0][j] = j*costIns;
+        }
+        // The distances between subtrees without the root nodes are in delta.
+        for (int i = 1; i <= size1; i++) {
+            for (int j = 1; j <= size2; j++) {
+                treedist[i][j] = delta[it1.postL_to_preL[i-1]][it2.postL_to_preL[j-1]];
+            }
+        }
+
+        // forestdist for input trees has to be computed
+        forestDist(it1, it2, size1, size2, treedist, forestdist);
+
+        // empty edit mapping
+        LinkedList<int[]> editMapping = new LinkedList<int[]>();
+
+        // empty stack of tree Pairs
+        LinkedList<int[]> treePairs = new LinkedList<int[]>();
+
+        // push the pair of trees (ted1,ted2) to stack
+        treePairs.push(new int[] { size1, size2 });
+
+        while (!treePairs.isEmpty()) {
+
+            // get next tree pair to be processed
+            int[] treePair = treePairs.pop();
+            int lastRow = treePair[0];
+            int lastCol = treePair[1];
+
+            // compute forest distance matrix
+            if (!rootNodePair) {
+                forestDist(it1, it2, lastRow, lastCol, treedist, forestdist);
+            }
+            rootNodePair = false;
+
+            // compute mapping for current forest distance matrix
+            int firstRow = it1.postL_to_lld[lastRow-1];
+            int firstCol = it2.postL_to_lld[lastCol-1];
+            int row = lastRow;
+            int col = lastCol;
+            while ((row > firstRow) || (col > firstCol)) {
+                if ((row > firstRow) && (forestdist[row - 1][col] + costDel == forestdist[row][col])) {
+                    // node with postorderID row is deleted from ted1
+                    editMapping.push(new int[] { row, 0 });
+                    row--;
+                } else if ((col > firstCol) && (forestdist[row][col - 1] + costIns == forestdist[row][col])) {
+                    // node with postorderID col is inserted into ted2
+                    editMapping.push(new int[] { 0, col });
+                    col--;
+                } else {
+                    // node with postorderID row in ted1 is renamed to node col
+                    // in ted2
+                    if ((it1.postL_to_lld[row-1] == it1.postL_to_lld[lastRow-1]) && (it2.postL_to_lld[col-1] == it2.postL_to_lld[lastCol-1])) {
+                        // if both subforests are trees, map nodes
+                        editMapping.push(new int[] { row, col });
+                        row--;
+                        col--;
+                    } else {
+                        // push subtree pair
+                        treePairs.push(new int[] { row, col });
+
+                        // continue with forest to the left of the popped
+                        // subtree pair
+                        row = it1.postL_to_lld[row-1];
+                        col = it2.postL_to_lld[col-1];
+                    }
+                }
+            }
+        }
+        return editMapping;
+    }
+
+    // Added by Victor. Pasted straight from RTED.
+    // The rename cost must be added in the last line. Otherwise the formula is 
+    // incorrect. This is due to delta storing distances between subtrees 
+    // without the root nodes.
+    private void forestDist(InfoTree_PLUS ted1, InfoTree_PLUS ted2, int i, int j, float[][] treedist, float[][] forestdist) {
+
+        forestdist[ted1.postL_to_lld[i-1]][ted2.postL_to_lld[j-1]] = 0;
+
+        for (int di = ted1.postL_to_lld[i-1]+1; di <= i; di++) {
+            forestdist[di][ted2.postL_to_lld[j-1]] = forestdist[di - 1][ted2.postL_to_lld[j-1]] + costDel;
+            for (int dj = ted2.postL_to_lld[j-1]+1; dj <= j; dj++) {
+                forestdist[ted1.postL_to_lld[i-1]][dj] = forestdist[ted1.postL_to_lld[i-1]][dj - 1] + costIns;
+                float costRen = 0;
+                if (ted1.labels[ted1.postL_to_preL[di-1]] != ted2.labels[ted2.postL_to_preL[dj-1]]) {
+                    costRen = costMatch;
+                }
+                if ((ted1.postL_to_lld[di-1] == ted1.postL_to_lld[i-1]) && (ted2.postL_to_lld[dj-1] == ted2.postL_to_lld[j-1])) {
+                    forestdist[di][dj] = Math.min(Math.min(
+                            forestdist[di - 1][dj] + costDel,
+                            forestdist[di][dj - 1] + costIns),
+                            forestdist[di - 1][dj - 1] + costRen);
+                    treedist[di][dj] = forestdist[di][dj];
+                } else {
+                    forestdist[di][dj] = Math.min(Math.min(
+                            forestdist[di - 1][dj] + costDel,
+                            forestdist[di][dj - 1] + costIns),
+                            forestdist[ted1.postL_to_lld[di-1]][ted2.postL_to_lld[dj-1]] + treedist[di][dj] + costRen);
+                }
+            }
+        }
+    }
+
+    public float mappingCost(LinkedList<int[]> mapping) {
+        float cost = 0.0f;
+        for (int i = 0; i < mapping.size(); i++) {
+            if (mapping.get(i)[0] == 0) {
+                cost += costIns;
+            } else if (mapping.get(i)[1] == 0) {
+                cost += costDel;
+            } else {
+                cost += (it1.getLabels(it1.postL_to_preL[mapping.get(i)[0]-1]) == it2.getLabels(it2.postL_to_preL[mapping.get(i)[1]-1])) ? 0 : costMatch;
+            }
+        }
+        return cost;
     }
 
     public void init(LblTree t1, LblTree t2)
@@ -1103,6 +1236,7 @@ public class APTED
     	
     	return index;
     } 
+    // [TODO] Substitute with postL_to_lld index of InfoTree.
     private int getLLD(InfoTree_PLUS it, int postorder) {
     	int preL = it.postL_to_preL[postorder];
     	return it.preL_to_postL[it.preR_to_preL[it.preL_to_preR[preL] + it.sizes[preL] - 1]];
@@ -1193,6 +1327,7 @@ public class APTED
     	
     	return index;
     }
+    // [TODO] Substitute with postR_to_rld index of InfoTree.
     private int getRLD(InfoTree_PLUS it, int revPostorder) {
     	int preL = it.postR_to_preL[revPostorder];
     	return it.preL_to_postR[preL + it.sizes[preL] - 1];
