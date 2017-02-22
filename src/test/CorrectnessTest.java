@@ -21,6 +21,8 @@
 
 // package test;
 
+import java.util.LinkedList;
+
 import util.LblTree;
 
 import org.junit.Before;
@@ -44,15 +46,28 @@ public class CorrectnessTest {
 		ted= new APTED((float)1.0, (float)1.0, (float)1.0);
 	}
 		
+  // [TODO] Split this test to mapping and distance tests.
+  // [TODO] Use only symmetric tests - remove non-symmetric tests.
 	private void symmetricTest(String strT1, String strT2, double expected) {
 		LblTree t1, t2;
 		double result;
+    LinkedList<int[]> mapping;
 		t1 = LblTree.fromString(strT1);
 		t2 = LblTree.fromString(strT2);
+    // Distance tests.
 		result = ted.nonNormalizedTreeDist(t1, t2);
 		assertEquals(expected, result, 0.000000001);
-		result = ted.nonNormalizedTreeDist(t2, t1);
+		// Mapping tests.
+    mapping = ted.computeEditMapping();
+    result = ted.mappingCost(mapping);
+    assertEquals(expected, result, 0.000000001);
+    // Distance test.
+    result = ted.nonNormalizedTreeDist(t2, t1);
 		assertEquals(expected, result, 0.000000001);		
+    // Mapping tests.
+    mapping = ted.computeEditMapping();
+    result = ted.mappingCost(mapping);
+    assertEquals(expected, result, 0.000000001);
 	}
 	
 	private void nonSymmetricTest(String strT1, String strT2, double expected) {
