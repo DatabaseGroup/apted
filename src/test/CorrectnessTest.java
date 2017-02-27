@@ -56,6 +56,7 @@ public class CorrectnessTest {
   private static final String CORRECTNESS_TESTS_PATH = "correctness_test_cases.json";
   
   // APTED algorithm initialized for each test case.
+  // Currently only unit-cost test cases are implemented.
   private APTED apted = new APTED((float)1.0, (float)1.0, (float)1.0);
 
   // Test case parameter field holding all test case parameters.
@@ -96,6 +97,8 @@ public class CorrectnessTest {
 
   // This method returns a list of test cases read from external JSON file.
   // Uses google.gson for reading JSON document.
+  // In case of a failure, the parameter values from TestCase object are
+  // printed '(name = "{0}")'.
   @Parameters(name = "{0}")
   public static Collection data() throws IOException {
     BufferedReader br = new BufferedReader(new FileReader(CORRECTNESS_TESTS_PATH));
@@ -104,36 +107,39 @@ public class CorrectnessTest {
     return Arrays.asList(testCases);
   }
 
-  // [TODO] Bring back all tests - each test should be a separate method:
-  //        - d(T1, T2)
-  //        - d(T2, T1)
-  //        - mapping_cost(T1, T2)
-  //        - mapping_cost(T2, T1)
+  // Calculate TED and compare to correct value.
   @Test
   public void correctDistanceTest() {
-    LblTree t1, t2;
-    int result;
-    // LinkedList<int[]> mapping;
-    t1 = LblTree.fromString(this.t.getT1());
-    t2 = LblTree.fromString(this.t.getT2());
-    // Distance tests.
+    LblTree t1 = LblTree.fromString(this.t.getT1());
+    LblTree t2 = LblTree.fromString(this.t.getT2());
     // This cast is safe due to unit cost.
-    result = (int)apted.nonNormalizedTreeDist(t1, t2);
-    // result = 9; // USED TO TEST FAILURE OUTPUT
+    int result = (int)apted.nonNormalizedTreeDist(t1, t2);
     assertEquals(this.t.getD(), result);
-    // assertEquals(expected, result, 0.000000001);
   }
 
-  // // Mapping tests.
-  //   mapping = ted.computeEditMapping();
-  //   result = ted.mappingCost(mapping);
-  //   assertEquals(expected, result, 0.000000001);
-  //   // Distance test.
-  //   result = ted.nonNormalizedTreeDist(t2, t1);
-    // assertEquals(expected, result, 0.000000001);   
-  //   // Mapping tests.
-  //   mapping = ted.computeEditMapping();
-  //   result = ted.mappingCost(mapping);
-  //   assertEquals(expected, result, 0.000000001);
+  // Calculate TED for swapped input trees and compare to correct value.
+  @Test
+  public void correctDistanceTestSymmetric() {
+    LblTree t1 = LblTree.fromString(this.t.getT1());
+    LblTree t2 = LblTree.fromString(this.t.getT2());
+    // This cast is safe due to unit cost.
+    int result = (int)apted.nonNormalizedTreeDist(t2, t1);
+    assertEquals(this.t.getD(), result);
+  }
+
+  // Compute minimum-cost edit mapping and compare its cost to the correct
+  // TED value.
+  @Test
+  public void correctMappingCostTest() {
+    LblTree t1 = LblTree.fromString(this.t.getT1());
+    LblTree t2 = LblTree.fromString(this.t.getT2());
+    // TED must be computed before the mapping.
+    // This cast is safe due to unit cost.
+    int result = (int)apted.nonNormalizedTreeDist(t1, t2);
+    LinkedList<int[]> mapping = apted.computeEditMapping();
+    // This cast is safe due to unit cost.
+    result = (int)apted.mappingCost(mapping);
+    assertEquals(this.t.getD(), result);
+  }
 
 }
