@@ -101,7 +101,7 @@ public class CorrectnessTest {
   // printed '(name = "{0}")'.
   @Parameters(name = "{0}")
   public static Collection data() throws IOException {
-    BufferedReader br = new BufferedReader(new FileReader(CORRECTNESS_TESTS_PATH));
+    BufferedReader br = new BufferedReader(new FileReader(CorrectnessTest.class.getResource("/"+CORRECTNESS_TESTS_PATH).getPath()));
     Gson gson = new Gson();
     TestCase[] testCases = new Gson().fromJson(br, TestCase[].class);   
     return Arrays.asList(testCases);

@@ -1,0 +1,16 @@
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile 'junit:junit:4.12',
+                'com.google.code.gson:gson:2.8.0'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'util.RTEDCommandLine'
+    }
+}
