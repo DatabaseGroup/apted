@@ -2,8 +2,9 @@
 
 ## Information
 
-This is the implementation of the APTED algorithm - the state-of-the-art
-solution for computing the tree edit distance [1,2,3].
+This is an implementation of the APTED algorithm, the state-of-the-art
+solution for computing the tree edit distance [1,2], which supersedes the RTED
+algorithm [3].
 
 You can find more information on our Tree Edit Distance website 
 http://tree-edit-distance.dbresearch.uni-salzburg.at/
@@ -14,20 +15,22 @@ If you want to refer to APTED in a publication, please cite [1] and [2].
 
 ## Licence
 
-The source code is published under the **MIT licence** found in the root project 
-directory and in the header of each source file.
+The source code is published under the **MIT licence** found in the root 
+directory of the project and in the header of each source file.
 
 ## Building APTED
 
-You can clone the code, compile, and build the JAR file the regular Java way.
+You can clone the code, compile, and build the JAR file the regular command-line
+way.
 
-We use gradle for connvenience:
-- run `gradle test` for unit correctness tests,
-- run `gradle build` to find the JAR file in `build/libs/`.
+We use [Gradle](https://gradle.org/) for connvenience.
+- [install Gradle](https://gradle.org/install)
+- run `gradle test` for unit tests (currently correctness tests)
+- run `gradle build` to find the `apted.jar` file in `build/libs/`
 
 ## Manual
 
-Execute `java -jar APTED.jar -h` for manual and help.
+Execute `java -jar apted.jar -h` for manual and help.
 
 ## References
 
