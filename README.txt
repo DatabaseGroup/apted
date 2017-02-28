@@ -6,13 +6,9 @@ If you want to refer to APTED in a publication, please cite [1] and [2].
 The source code is published under the MIT licence found in the header of each
 source file.
 
-To build, do the following steps from within the root directory:
-  mkdir build
-  cd build
-  cmake ..
-  make
-
-The jar file can be found in 'build'.
+We use gradle:
+- run 'gradle test' for unit correctness tests,
+- run 'gradle build' to find to JAR file in 'build/libs/'.
 
 [1] M. Pawlik and N. Augsten. Efficient Computation of the Tree Edit 
     Distance. ACM Transactions on Database Systems (TODS) 40(1). 2015.
