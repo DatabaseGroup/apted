@@ -104,32 +104,15 @@ public class APTED
     // Added by Victor. Pasted straight from RTED.
     public LinkedList<int[]> computeEditMapping() {
 
-        // initialize tree and forest distance arrays
-        /*
-         * [TODO] Substitute treedist with delta. Currently values from delta
-         *        are copied to treedist. Problems:
-         *        - treedist is indexed in postorder, delta in preorder
-         *          - translate the indices when accessing delta in forestdist
-         *        - treedist's size differs from delta by 1
-         *          - verify if the values from first row and column are read
-         *          - solve this with translation
-         */
-        float[][] treedist = new float[size1 + 1][size2 + 1];
+        // Initialize tree and forest distance arrays.
+        // Arrays for subtree distrances is not needed because the distances 
+        // between subtrees without the root nodes are already stored in delta.
         float[][] forestdist = new float[size1 + 1][size2 + 1];
 
         boolean rootNodePair = true;
 
-        // The distances between subtrees without the root nodes are in delta.
-        // Copy them to treedist with index translation from preorder to
-        // postorder.
-        for (int i = 1; i <= size1; i++) {
-            for (int j = 1; j <= size2; j++) {
-                treedist[i][j] = delta[it1.postL_to_preL[i-1]][it2.postL_to_preL[j-1]];
-            }
-        }
-
         // forestdist for input trees has to be computed
-        forestDist(it1, it2, size1, size2, treedist, forestdist);
+        forestDist(it1, it2, size1, size2, forestdist);
 
         // empty edit mapping
         LinkedList<int[]> editMapping = new LinkedList<int[]>();
@@ -149,7 +132,7 @@ public class APTED
 
             // compute forest distance matrix
             if (!rootNodePair) {
-                forestDist(it1, it2, lastRow, lastCol, treedist, forestdist);
+                forestDist(it1, it2, lastRow, lastCol, forestdist);
             }
             rootNodePair = false;
 
@@ -194,7 +177,8 @@ public class APTED
     // The rename cost must be added in the last line. Otherwise the formula is 
     // incorrect. This is due to delta storing distances between subtrees 
     // without the root nodes.
-    private void forestDist(InfoTree_PLUS ted1, InfoTree_PLUS ted2, int i, int j, float[][] treedist, float[][] forestdist) {
+    // i and j are postorder ids of the nodes - starting with 1
+    private void forestDist(InfoTree_PLUS ted1, InfoTree_PLUS ted2, int i, int j, float[][] forestdist) {
 
         forestdist[ted1.postL_to_lld[i-1]][ted2.postL_to_lld[j-1]] = 0;
 
@@ -211,12 +195,20 @@ public class APTED
                             forestdist[di - 1][dj] + costDel,
                             forestdist[di][dj - 1] + costIns),
                             forestdist[di - 1][dj - 1] + costRen);
-                    treedist[di][dj] = forestdist[di][dj];
+                    // If substituted with delta, this will overwrite the value 
+                    // in delta.
+                    // It looks that we don't have to write this value. 
+                    // Conceptually it is correct because we already have all
+                    // the values in delta for subtrees without the root nodes,
+                    // and we need these.
+                    // treedist[di][dj] = forestdist[di][dj];
                 } else {
+                    // di and dj are postorder ids of the nodes - starting with 1
+                    // Substituted 'treedist[di][dj]' with 'delta[it1.postL_to_preL[di-1]][it2.postL_to_preL[dj-1]]'
                     forestdist[di][dj] = Math.min(Math.min(
                             forestdist[di - 1][dj] + costDel,
                             forestdist[di][dj - 1] + costIns),
-                            forestdist[ted1.postL_to_lld[di-1]][ted2.postL_to_lld[dj-1]] + treedist[di][dj] + costRen);
+                            forestdist[ted1.postL_to_lld[di-1]][ted2.postL_to_lld[dj-1]] + delta[it1.postL_to_preL[di-1]][it2.postL_to_preL[dj-1]] + costRen);
                 }
             }
         }
