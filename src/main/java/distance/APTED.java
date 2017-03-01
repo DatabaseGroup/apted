@@ -105,20 +105,23 @@ public class APTED
     public LinkedList<int[]> computeEditMapping() {
 
         // initialize tree and forest distance arrays
-        // [TODO] treedist differs from delta by one index.
+        /*
+         * [TODO] Substitute treedist with delta. Currently values from delta
+         *        are copied to treedist. Problems:
+         *        - treedist is indexed in postorder, delta in preorder
+         *          - translate the indices when accessing delta in forestdist
+         *        - treedist's size differs from delta by 1
+         *          - verify if the values from first row and column are read
+         *          - solve this with translation
+         */
         float[][] treedist = new float[size1 + 1][size2 + 1];
         float[][] forestdist = new float[size1 + 1][size2 + 1];
 
         boolean rootNodePair = true;
 
-        // [TODO] These costs seem incorrect. Shouldn't they be sizes of i and j?
-        for (int i = 0; i < size1; i++) {
-            treedist[i][0] = i*costDel;
-        }
-        for (int j = 0; j < size2; j++) {
-            treedist[0][j] = j*costIns;
-        }
         // The distances between subtrees without the root nodes are in delta.
+        // Copy them to treedist with index translation from preorder to
+        // postorder.
         for (int i = 1; i <= size1; i++) {
             for (int j = 1; j <= size2; j++) {
                 treedist[i][j] = delta[it1.postL_to_preL[i-1]][it2.postL_to_preL[j-1]];
