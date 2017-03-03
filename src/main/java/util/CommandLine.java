@@ -257,44 +257,44 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
     }
 	}
 
-	/**
-	 * Parse two input trees from given files.
-	 *
-	 * @param fs1
-	 * @param fs2
-	 */
-	private void parseTreesFromFiles(String fs1, String fs2) {
-		try {
-            lt1 = LblTree.fromString((new BufferedReader(new FileReader(fs1))).readLine());
-            // size1 = lt1.getNodeCount();
-        } catch (Exception e) {
-            System.out.println("TREE1 argument has wrong format");
-            System.exit(0);
-        }
-        try {
-            lt2 = LblTree.fromString((new BufferedReader(new FileReader(fs2))).readLine());
-            // size2 = lt2.getNodeCount();
-        } catch (Exception e) {
-            System.out.println("TREE2 argument has wrong format");
-            System.exit(0);
-        }
-	}
+  /**
+   * Parses two input trees from given files.
+   *
+   * @param fs1 path to file with source tree.
+   * @param fs2 path to file with destination tree.
+   */
+  private void parseTreesFromFiles(String fs1, String fs2) {
+    try {
+      lt1 = LblTree.fromString((new BufferedReader(new FileReader(fs1))).readLine());
+      // size1 = lt1.getNodeCount();
+    } catch (Exception e) {
+      System.out.println("TREE1 argument has wrong format");
+      System.exit(0);
+    }
+    try {
+      lt2 = LblTree.fromString((new BufferedReader(new FileReader(fs2))).readLine());
+      // size2 = lt2.getNodeCount();
+    } catch (Exception e) {
+      System.out.println("TREE2 argument has wrong format");
+      System.exit(0);
+    }
+  }
 
-	/**
-	 * Set custom costs.
-	 *
-	 * @param cds
-	 * @param cis
-	 * @param cms
-	 */
-	private void setCosts(String cds, String cis, String cms) {
-		try {
-			rted.setCustomCosts(Float.parseFloat(cds), Float.parseFloat(cis), Float.parseFloat(cms));
-		} catch (Exception e) {
-			System.out.println("One of the costs has wrong format.");
-            System.exit(0);
-		}
-	}
-
+  /**
+   * Set custom costs for the edit operations.
+   *
+   * @deprecated
+   * @param cds cost of deletion.
+   * @param cis cost of insertion.
+   * @param cms cost of rename (mapping).
+   */
+   private void setCosts(String cds, String cis, String cms) {
+     try {
+       rted.setCustomCosts(Float.parseFloat(cds), Float.parseFloat(cis), Float.parseFloat(cms));
+     } catch (Exception e) {
+       System.out.println("One of the costs has wrong format.");
+       System.exit(0);
+     }
+  }
 
 }
