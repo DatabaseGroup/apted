@@ -34,27 +34,73 @@ import java.util.Vector;
  * vector of pointers to its children. The order of children is significant and
  * must be observed while implmeneting a custom input parser.
  *
- * @param <D> the type of node data.
- * @see InputParser
+ * @param <D> the type of node data (node label).
  */
 public class Node<D> {
   private D nodeData;
   private Vector<Node<D>> children;
 
+  /**
+   * Constructs a new node with the passed node data and an empty vector of
+   * children.
+   *
+   * @param nodeData instance of node data (node label).
+   */
   public Node(D nodeData) {
     this.children = new Vector<Node<D>>();
     setNodeData(nodeData);
   }
 
+  /**
+   * Counts the number of nodes in a tree rooted at this node.
+   *
+   * <p>This method runs in linear time in the tree size.
+   *
+   * @return number of nodes in the tree rooted at this node.
+   */
+  public int getNodeCount() {
+      int sum = 1;
+      for(Node<D> child : getChildren()) {
+        sum += getNodeCount();
+      }
+      return sum;
+  }
+
+  /**
+   * Adds a new child at the end of children vector. The added child will be
+   * the last child of this node.
+   *
+   * @param c child node to add.
+   */
+  public void addChild(Node c) {
+    this.children.add(c);
+  }
+
+  /**
+   * Returns node data. Used especially for calculating rename cost.
+   *
+   * @return node data (label of a node).
+   */
   public D getNodeData() {
     return nodeData;
   }
 
+  /**
+   * Sets the node data of this node.
+   *
+   * @param nodeData instance of node data (node label).
+   */
   public void setNodeData(D nodeData) {
     this.nodeData = nodeData;
   }
 
-  public void addChild(Node c) {
-    this.children.add(c);
+  /**
+   * Returns the vector with all node's children.
+   *
+   * @return children of the node.
+   */
+  public Vector<Node<D>> getChildren() {
+    return children;
   }
+
 }
