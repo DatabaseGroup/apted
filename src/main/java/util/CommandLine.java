@@ -1,23 +1,25 @@
-// The MIT License (MIT)
-// Copyright (c) 2016 Mateusz Pawlik and Nikolaus Augsten
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy 
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights 
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
-// copies of the Software, and to permit persons to whom the Software is 
-// furnished to do so, subject to the following conditions:
-// 
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+/* MIT License
+ *
+ * Copyright (c) 2017 Database Research Group Salzburg
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 package util;
 
@@ -27,18 +29,24 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.Vector;
-
 import distance.APTED;
+import node.Node;
+import cost.CostModel;
+import cost.StringUnitCostModel;
+import parser.InputParser;
+import parser.BracketStringInputParser;
 
 /**
- * This is the command line access for running RTED algorithm.
- * 
- * @author Mateusz Pawlik
+ * This is the command line interface for executing APTED algorithm.
  *
+ * @param <C> type of cost model.
+ * @param <P> type of input parser.
+ * @see CostModel
+ * @see InputParser
  */
-public class RTEDCommandLine {
-	
-	private String helpMessage = 
+public class CommandLine<C extends CostModel, P extends InputParser> {
+
+	private String helpMessage =
     		"\n" +
     		"Compute the edit distance between two trees.\n" +
     		"\n" +
@@ -91,7 +99,7 @@ public class RTEDCommandLine {
             "\n" +
             "    -m, --mapping\n" +
             "        compute the minimal edit mapping between two trees. There might\n" +
-            "        be multiple minimal edit mappings. This option computes only one\n" + 
+            "        be multiple minimal edit mappings. This option computes only one\n" +
             "        of them. The frst line of the output is the cost of the mapping.\n" +
             "        The following lines represent the edit operations. n and m are\n" +
             "        postorder IDs (beginning with 1) of nodes in the left-hand and\n" +
@@ -117,35 +125,54 @@ public class RTEDCommandLine {
     		"AUTHORS\n" +
     		"\n" +
     		"    Mateusz Pawlik, Nikolaus Augsten";
-	
+
+  // [TODO] Review if all fields are necessary.
 	private String wrongArgumentsMessage = "Wrong arguments. Try \"java -jar RTED.jar --help\" for help.";
-	
 	private LblTree lt1, lt2;
-	private int size1, size2;
+	// private int size1, size2;
 	private boolean run, custom, array, strategy, ifSwitch, sota, verbose, demaine, mapping;
 	private int sotaStrategy;
 	private String customStrategy, customStrategyArrayFile;
 	private APTED rted;
 	private double ted;
-	
+
+  private C costModel;
+  private P inputParser;
+  private Node t1;
+  private Node t2;
+
+  /**
+   * Constructs the command line. Initialises the cost model and input parser
+   * of specific types.
+   *
+   * @param costModel instance of a specific cost model.
+   * @param inputParser instance of a specific inputParser.
+   * @see CostModel
+   * @see InputParser
+   */
+  public CommandLine(C costModel, P inputParser) {
+    this.costModel = costModel;
+    this.inputParser = inputParser;
+  }
+
 	/**
-	 * Main method 
-	 * 
-	 * @param args
+	 * Main method, invoced when executing the jar file.
+	 *
+	 * @param args array of command line arguments passed when executing jar file.
 	 */
 	public static void main(String[] args) {
-		RTEDCommandLine rtedCL = new RTEDCommandLine();
+		CommandLine<StringUnitCostModel, BracketStringInputParser> rtedCL = new CommandLine<>(new StringUnitCostModel(), new BracketStringInputParser());
 		rtedCL.runCommandLine(args);
 	}
-	
+
 	/**
 	 * Run the command line with given arguments.
-	 * 
-	 * @param args
+	 *
+	 * @param args array of command line arguments passed when executing jar file.
 	 */
 	public void runCommandLine(String[] args) {
 		rted = new APTED(1, 1, 1);
-	
+
 		try {
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].equals("--help") || args[i].equals("-h")) {
@@ -171,17 +198,17 @@ public class RTEDCommandLine {
 				System.exit(0);
 			}
 		}
-		
+
 		} catch (ArrayIndexOutOfBoundsException e) {
 			System.out.println("Too few arguments.");
             System.exit(0);
 		}
-		
+
 		if (!run) {
 			System.out.println(wrongArgumentsMessage);
 			System.exit(0);
 		}
-		
+
 		long time1 = (new Date()).getTime();
 		ted = rted.nonNormalizedTreeDist(lt1, lt2);
 		long time2 = (new Date()).getTime();
@@ -200,56 +227,62 @@ public class RTEDCommandLine {
     }
 
 	}
-		
-	/**
-	 * Parse two input trees from the command line.
-	 * 
-	 * @param ts1
-	 * @param ts2
-	 */
-	private void parseTreesFromCommandLine(String ts1, String ts2) {
-		try {
-            lt1 = LblTree.fromString(ts1);
-            size1 = lt1.getNodeCount();
-        } catch (Exception e) {
-            System.out.println("TREE1 argument has wrong format");
-            System.exit(0);
-        }
-        try {
-            lt2 = LblTree.fromString(ts2);
-            size2 = lt2.getNodeCount();
-        } catch (Exception e) {
-            System.out.println("TREE2 argument has wrong format");
-            System.exit(0);
-        }
+
+  /**
+   * Parse two input trees from the command line and convert them to tree
+   * representation using {@link Node class}.
+   *
+   * @param ts1 source input tree as string.
+   * @param ts2 destination input tree as string.
+   * @see Node
+   */
+  private void parseTreesFromCommandLine(String ts1, String ts2) {
+    try {
+      t1 = inputParser.fromString(ts1);
+      // size1 = NodeUtilities.getNodeCount(t1);
+      lt1 = LblTree.fromString(ts1);
+      // size1 = lt1.getNodeCount();
+    } catch (Exception e) {
+      System.out.println("TREE1 argument has wrong format");
+      System.exit(0);
+    }
+    try {
+      t2 = inputParser.fromString(ts2);
+      // size2 = NodeUtilities.getNodeCount(t2);
+      lt2 = LblTree.fromString(ts2);
+      // size2 = lt2.getNodeCount();
+    } catch (Exception e) {
+      System.out.println("TREE2 argument has wrong format");
+      System.exit(0);
+    }
 	}
-	
+
 	/**
 	 * Parse two input trees from given files.
-	 * 
+	 *
 	 * @param fs1
 	 * @param fs2
 	 */
 	private void parseTreesFromFiles(String fs1, String fs2) {
 		try {
             lt1 = LblTree.fromString((new BufferedReader(new FileReader(fs1))).readLine());
-            size1 = lt1.getNodeCount();
+            // size1 = lt1.getNodeCount();
         } catch (Exception e) {
             System.out.println("TREE1 argument has wrong format");
             System.exit(0);
         }
         try {
             lt2 = LblTree.fromString((new BufferedReader(new FileReader(fs2))).readLine());
-            size2 = lt2.getNodeCount();
+            // size2 = lt2.getNodeCount();
         } catch (Exception e) {
             System.out.println("TREE2 argument has wrong format");
             System.exit(0);
         }
 	}
-	
+
 	/**
 	 * Set custom costs.
-	 * 
+	 *
 	 * @param cds
 	 * @param cis
 	 * @param cms
@@ -262,6 +295,6 @@ public class RTEDCommandLine {
             System.exit(0);
 		}
 	}
-	
-	
+
+
 }
