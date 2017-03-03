@@ -21,6 +21,12 @@
  * SOFTWARE.
  */
 
+package cost;
+
+import cost.CostModel;
+import node.Node;
+import node.StringNodeData;
+
 /**
  * This is a unit-nost model defined on string labels.
  *

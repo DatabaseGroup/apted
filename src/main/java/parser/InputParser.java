@@ -21,6 +21,10 @@
  * SOFTWARE.
  */
 
+package parser;
+
+import node.Node;
+
 /**
  * This interface specifies methods (currently only one) that must be
  * implemented for a custom input parser.

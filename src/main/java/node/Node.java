@@ -21,6 +21,8 @@
  * SOFTWARE.
  */
 
+package node;
+
 import java.util.Vector;
 
 // BracketStringInputParser parser = new BracketStringInputParser();

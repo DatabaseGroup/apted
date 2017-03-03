@@ -21,8 +21,12 @@
  * SOFTWARE.
  */
 
+package parser;
+
 import java.util.Vector;
 import util.FormatUtilities;
+import node.Node;
+import node.StringNodeData;
 
 // [TODO] Make this parser independent from FormatUtilities - move here relevant elements.
 

@@ -21,6 +21,8 @@
  * SOFTWARE.
  */
 
+package cost;
+
 /**
  * This interface specifies the methods to implement for a custom cost model.
  * The methods represent the costs of edit operations (delete, insert, rename).
