@@ -21,9 +21,9 @@
  * SOFTWARE.
  */
 
-package cost;
+package costmodel;
 
-import cost.CostModel;
+import costmodel.CostModel;
 import node.Node;
 import node.StringNodeData;
 

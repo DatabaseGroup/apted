@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-package cost;
+package costmodel;
 
 /**
  * This interface specifies the methods to implement for a custom cost model.

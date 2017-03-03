@@ -31,8 +31,8 @@ import java.util.Scanner;
 import java.util.Vector;
 import distance.APTED;
 import node.Node;
-import cost.CostModel;
-import cost.StringUnitCostModel;
+import costmodel.CostModel;
+import costmodel.StringUnitCostModel;
 import parser.InputParser;
 import parser.BracketStringInputParser;
 
