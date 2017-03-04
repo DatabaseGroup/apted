@@ -25,10 +25,6 @@ package node;
 
 import java.util.Vector;
 
-// BracketStringInputParser parser = new BracketStringInputParser();
-// Node<StringNodeData> t1 = parser.fromString(ts1);
-// int size1 = Node.getNodeCount(); // in Node: static int getNodeCount(){}
-
 /**
  * This is a recursive representation of an ordered tree. Each node stores a
  * vector of pointers to its children. The order of children is significant and
