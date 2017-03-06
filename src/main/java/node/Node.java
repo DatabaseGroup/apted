@@ -73,6 +73,23 @@ public class Node<D> {
   }
 
   /**
+   * Returns a string representation of the tree in bracket notation.
+   *
+   * <p>IMPORTANT: Works only for nodes storing {@link node.StringNodeData}
+   * due to using {@link node.StringNodeData#getLabel()}.
+   *
+   * @return tree in bracket notation.
+   */
+  public String toString() {
+    String res = (new StringBuilder("{")).append(((StringNodeData)getNodeData()).getLabel()).toString();
+    for(Node<D> child : getChildren()) {
+      res = (new StringBuilder(String.valueOf(res))).append(child.toString()).toString();
+    }
+    res = (new StringBuilder(String.valueOf(res))).append("}").toString();
+    return res;
+  }
+
+  /**
    * Returns node data. Used especially for calculating rename cost.
    *
    * @return node data (label of a node).
