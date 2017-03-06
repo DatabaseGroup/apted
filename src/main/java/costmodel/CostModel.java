@@ -23,6 +23,8 @@
 
 package costmodel;
 
+import node.Node;
+
 /**
  * This interface specifies the methods to implement for a custom cost model.
  * The methods represent the costs of edit operations (delete, insert, rename).
@@ -37,7 +39,7 @@ public interface CostModel<D> {
    * @param n the node considered to be deleted.
    * @return the cost of deleting node n.
    */
-  public float del(D nd);
+  public float del(Node<D> n);
 
   /**
    * Calculates the cost of inserting a node.
@@ -45,7 +47,7 @@ public interface CostModel<D> {
    * @param n the node considered to be inserted.
    * @return the cost of inserting node n.
    */
-  public float ins(D nd);
+  public float ins(Node<D> n);
 
   /**
    * Calculates the cost of renaming (mapping) two nodes.
@@ -54,5 +56,5 @@ public interface CostModel<D> {
    * @param n2 the destination node of rename.
    * @return the cost of renaming (mapping) node n1 to n2.
    */
-  public float ren(D nd1, D nd2);
+  public float ren(Node<D> n1, Node<D> n2);
 }
