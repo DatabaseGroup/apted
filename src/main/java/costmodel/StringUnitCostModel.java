@@ -33,6 +33,8 @@ import node.StringNodeData;
  * @see CostModel
  * @see StringNodeData
  */
+ // [TODO] Use a label dictionary to encode string labels with integers for
+ //        faster rename cost computation.
 public class StringUnitCostModel implements CostModel<StringNodeData> {
 
   /**
