@@ -14,3 +14,13 @@ jar {
         attributes 'Main-Class': 'util.CommandLine'
     }
 }
+
+javadoc {
+  classpath += sourceSets.test.compileClasspath
+  source += sourceSets.test.allJava
+  options.memberLevel = JavadocMemberLevel.PRIVATE
+}
+
+test {
+  testLogging.showStandardStreams = true
+}
