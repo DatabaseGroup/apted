@@ -24,6 +24,7 @@
 package costmodel;
 
 import costmodel.CostModel;
+import node.Node;
 import node.StringNodeData;
 
 /**
@@ -40,7 +41,7 @@ public class StringUnitCostModel implements CostModel<StringNodeData> {
    * @param n a node considered to be deleted.
    * @return 1 - a fixed cost of deleting a node.
    */
-  public float del(StringNodeData nd) {
+  public float del(Node<StringNodeData> n) {
     return 1.0f;
   }
 
@@ -50,7 +51,7 @@ public class StringUnitCostModel implements CostModel<StringNodeData> {
    * @param n a node considered to be inserted.
    * @return 1 - a fixed cost of inserting a node.
    */
-  public float ins(StringNodeData nd) {
+  public float ins(Node<StringNodeData> n) {
     return 1.0f;
   }
 
@@ -61,7 +62,7 @@ public class StringUnitCostModel implements CostModel<StringNodeData> {
    * @param n2 a destination node for rename (mapping).
    * @return 1 if labels of renamed nodes are equal, and 0 otherwise.
    */
-  public float ren(StringNodeData nd1, StringNodeData nd2) {
-    return nd1.getLabel() == nd2.getLabel() ? 0.0f : 1.0f;
+  public float ren(Node<StringNodeData> n1, Node<StringNodeData> n2) {
+    return n1.getNodeData().getLabel() == n2.getNodeData().getLabel() ? 0.0f : 1.0f;
   }
 }
