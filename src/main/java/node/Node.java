@@ -57,7 +57,7 @@ public class Node<D> {
   public int getNodeCount() {
       int sum = 1;
       for(Node<D> child : getChildren()) {
-        sum += getNodeCount();
+        sum += child.getNodeCount();
       }
       return sum;
   }
