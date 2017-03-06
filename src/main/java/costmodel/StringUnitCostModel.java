@@ -65,6 +65,6 @@ public class StringUnitCostModel implements CostModel<StringNodeData> {
    * @return 1 if labels of renamed nodes are equal, and 0 otherwise.
    */
   public float ren(Node<StringNodeData> n1, Node<StringNodeData> n2) {
-    return n1.getNodeData().getLabel() == n2.getNodeData().getLabel() ? 0.0f : 1.0f;
+    return (n1.getNodeData().getLabel().equals(n2.getNodeData().getLabel())) ? 0.0f : 1.0f;
   }
 }
