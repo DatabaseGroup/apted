@@ -62,7 +62,7 @@ public class CorrectnessTest {
   private static final String CORRECTNESS_TESTS_PATH = "correctness_test_cases.json";
 
   /**
-   * APTED algorithm initialized once for each test case. Currently only
+   * APTED algorithm initialized only once for all test cases. Currently only
    * unit-cost test cases are implemented.
    */
   private APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>((float)1.0, (float)1.0, (float)1.0, new StringUnitCostModel());
@@ -72,14 +72,13 @@ public class CorrectnessTest {
    *
    * <p>Could be also deserialized here but without much benefit.
    */
-  private TestCase t;
+  private TestCase testCase;
 
   /**
    * This class represents a single test case from the JSON file. JSON keys
    * are mapped to fiels of this class.
-   *
-   * <p><b>[TODO]</b> Verify if this is the best placement for this class.
    */
+  // [TODO] Verify if this is the best placement for this class.
   private static class TestCase {
 
     /**
@@ -155,10 +154,10 @@ public class CorrectnessTest {
    * Constructs a single test for a single test case. Used for parameterised
    * tests.
    *
-   * @param t single test case.
+   * @param testCase single test case.
    */
-  public CorrectnessTest(TestCase t) {
-    this.t = t;
+  public CorrectnessTest(TestCase testCase) {
+    this.testCase = testCase;
   }
 
   /**
@@ -187,24 +186,27 @@ public class CorrectnessTest {
   @Test
   public void correctnessParsingTestBracketNotationToStringNodeData() {
     BracketStringInputParser parser = new BracketStringInputParser();
-    Node<StringNodeData> t1 = parser.fromString(t.getT1());
-    Node<StringNodeData> t2 = parser.fromString(t.getT2());
-    assertEquals(t.getT1(), t1.toString());
-    assertEquals(t.getT2(), t2.toString());
+    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+    assertEquals(testCase.getT1(), t1.toString());
+    assertEquals(testCase.getT2(), t2.toString());
   }
 
   /**
    * Compute TED for a single test case and compare to the correct value. Uses
    * node labels with a single string value and unit cost model.
+   *
+   * @see node.StringNodeData
+   * @see costmodel.StringUnitCostModel
    */
   @Test
   public void correctnessDistanceTestStringUnitCost() {
     BracketStringInputParser parser = new BracketStringInputParser();
-    Node<StringNodeData> t1 = parser.fromString(t.getT1());
-    Node<StringNodeData> t2 = parser.fromString(t.getT2());
+    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
     // This cast is safe due to unit cost.
     int result = (int)apted.nonNormalizedTreeDist(t1, t2);
-    assertEquals(t.getD(), result);
+    assertEquals(testCase.getD(), result);
   }
 
   /**
