@@ -207,48 +207,45 @@ public class CorrectnessTest {
     assertEquals(t.getD(), result);
   }
 
-  // [TODO] Bring the tests below back to life.
+  /**
+   * Compute TED for a single test case with swapped input trees and compare
+   * to the correct value. Uses node labels with a single string value and unit
+   * cost model.
+   *
+   * @see node.StringNodeData
+   * @see costmodel.StringUnitCostModel
+   */
+  @Test
+  public void correctDistanceTestSymmetric() {
+    BracketStringInputParser parser = new BracketStringInputParser();
+    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+    // This cast is safe due to unit cost. Input trees are swapped.
+    int result = (int)apted.nonNormalizedTreeDist(t2, t1);
+    assertEquals(testCase.getD(), result);
+  }
 
-  // /**
-  //  * Compute TED for a single test case and compare to the correct value.
-  //  */
-  // // @Test
-  // public void correctDistanceTest() {
-  //   LblTree t1 = LblTree.fromString(this.t.getT1());
-  //   LblTree t2 = LblTree.fromString(this.t.getT2());
-  //   // This cast is safe due to unit cost.
-  //   int result = (int)apted.nonNormalizedTreeDist(t1, t2);
-  //   assertEquals(this.t.getD(), result);
-  // }
-
-  // /**
-  //  * Compute TED for swapped input trees from a single test case and compare
-  //  * to the correct value.
-  //  */
-  // // @Test
-  // public void correctDistanceTestSymmetric() {
-  //   LblTree t1 = LblTree.fromString(this.t.getT1());
-  //   LblTree t2 = LblTree.fromString(this.t.getT2());
-  //   // This cast is safe due to unit cost.
-  //   int result = (int)apted.nonNormalizedTreeDist(t2, t1);
-  //   assertEquals(this.t.getD(), result);
-  // }
-
-  // /**
-  //  * Compute minimum-cost edit mapping for a single test case and compare its
-  //  * cost to the correct TED value.
-  //  */
-  // // @Test
-  // public void correctMappingCostTest() {
-  //   LblTree t1 = LblTree.fromString(this.t.getT1());
-  //   LblTree t2 = LblTree.fromString(this.t.getT2());
-  //   // TED must be computed before the mapping.
-  //   // This cast is safe due to unit cost.
-  //   int result = (int)apted.nonNormalizedTreeDist(t1, t2);
-  //   LinkedList<int[]> mapping = apted.computeEditMapping();
-  //   // This cast is safe due to unit cost.
-  //   result = (int)apted.mappingCost(mapping);
-  //   assertEquals(this.t.getD(), result);
-  // }
+  /**
+   * Compute minimum-cost edit mapping for a single test case and compare its
+   * cost to the correct TED value. Uses node labels with a single string value
+   * and unit cost model.
+   *
+   * @see node.StringNodeData
+   * @see costmodel.StringUnitCostModel
+   */
+  @Test
+  public void correctMappingCostTest() {
+    BracketStringInputParser parser = new BracketStringInputParser();
+    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+    // Although we don't need TED value yet, TED must be computed before the
+    // mapping. This cast is safe due to unit cost.
+    apted.nonNormalizedTreeDist(t1, t2);
+    // Get TED value corresponding to the computed mapping.
+    LinkedList<int[]> mapping = apted.computeEditMapping();
+    // This cast is safe due to unit cost.
+    int result = (int)apted.mappingCost(mapping);
+    assertEquals(testCase.getD(), result);
+  }
 
 }
