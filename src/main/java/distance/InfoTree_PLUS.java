@@ -41,11 +41,11 @@ import node.Node;
 public class InfoTree_PLUS<D> {
 
   /**
-   * The input tree to the algorithm already parsed to tree structure using
-   * {@link node.Node} class.
+   * The input tree to the algorithm that is already parsed to tree structure
+   * using {@link node.Node} class.
    *
-   * @see Node
-   * @see InputParser
+   * @see node.Node
+   * @see parser.InputParser
    */
   private Node<D> inputTree;
 
