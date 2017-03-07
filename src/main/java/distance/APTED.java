@@ -129,13 +129,13 @@ public class APTED<C extends CostModel, D> {
    * to the distance computation and the distance must be computed before
    * computing the edit mapping (distances of subtree pairs are required).
    *
-   * [TODO] Mapping computation requires more thorough documentation
-   *        (methods computeEditMapping, forestDist, mappingCost).
-   *
    * @return Returns list of pairs of nodes that are mapped as pairs of their
    *         postorder IDs (starting with 1). Nodes that are deleted or
    *         inserted are mapped to 0.
    */
+  // [TODO] Mapping computation requires more thorough documentation
+  //        (methods computeEditMapping, forestDist, mappingCost).
+  // [TODO] Before computing the mapping, verify if TED has been computed.
   public LinkedList<int[]> computeEditMapping() {
 
     // Initialize tree and forest distance arrays.
