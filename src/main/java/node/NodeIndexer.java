@@ -140,35 +140,123 @@ public class NodeIndexer<D> {
   public boolean nodeType_R[];
 
   // Traversal translation indices.
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * right-to-left preorder id of n.
+   */
   public int preL_to_preR[];
+
+  /**
+   * Index from right-to-left preorder id of node n (starting with 0) to the
+   * left-to-right preorder id of n.
+   */
   public int preR_to_preL[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * left-to-right postorder id of n.
+   */
   public int preL_to_postL[];
+
+  /**
+   * Index from left-to-right postorder id of node n (starting with 0) to the
+   * left-to-right preorder id of n.
+   */
   public int postL_to_preL[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * right-to-left postorder id of n.
+   */
   public int preL_to_postR[];
+
+  /**
+   * Index from right-to-left postorder id of node n (starting with 0) to the
+   * left-to-right preorder id of n.
+   */
   public int postR_to_preL[];
 
   // Cost indices.
-  public int preL_to_kr_sum[];
-  public int preL_to_rev_kr_sum[];
-  public int preL_to_desc_sum[];
 
-  // Variables used temporarily while indexing.
-  private int sizeTmp;
-  private int descSizesTmp;
-  private int krSizesSumTmp;
-  private int revkrSizesSumTmp;
-  private int preorderTmp;
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * cost of spf_L (single path function using the leftmost path) for the
+   * subtree rooted at n [1, Section 5.2].
+   */
+  public int preL_to_kr_sum[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * cost of spf_R (single path function using the rightmost path) for the
+   * subtree rooted at n [1, Section 5.2].
+   */
+  public int preL_to_rev_kr_sum[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * cost of spf_A (single path function using an inner path) for the subtree
+   * rooted at n [1, Section 5.2].
+   */
+  public int preL_to_desc_sum[];
 
   // Variables holding values modified at runtime while the algorithm executes.
   private int currentNode;
   private boolean switched;
 
   // Structure single-value variables.
-  private int leafCount;
+
+  /**
+   * [TODO] Document it.
+   */
   private int treeSize;
+
+  /**
+   * [TODO] Document it.
+   */
   public int lchl;
+
+  /**
+   * [TODO] Document it.
+   */
   public int rchl;
 
+  // Variables used temporarily while indexing.
+
+  /**
+   * Temporary variable used in indexing for storing subtree size.
+   */
+  private int sizeTmp;
+
+  /**
+   * Temporary variable used in indexing for storing sum of subtree sizes
+   * rooted at descendant nodes.
+   */
+  private int descSizesTmp;
+
+  /**
+   * Temporary variable used in indexing for storing sum of keyroot node sizes.
+   */
+  private int krSizesSumTmp;
+
+  /**
+   * Temporary variable used in indexing for storing sum of right-to-left
+   * keyroot node sizes.
+   */
+  private int revkrSizesSumTmp;
+
+  /**
+   * Temporary variable used in indexing for storing preorder index of a node.
+   */
+  private int preorderTmp;
+
+  /**
+   * Indexes the nodes of input trees and stores the indices for quick access
+   * from APTED algorithm.
+   *
+   * @param aInputTree an input tree to APTED. Its nodes will be indexed.
+   * @param <D> type on node data.
+   */
   public NodeIndexer(Node<D> aInputTree) {
     sizeTmp = 0;
     descSizesTmp = 0;
@@ -177,7 +265,6 @@ public class NodeIndexer<D> {
     preorderTmp = 0;
     currentNode = -1;
     switched = false;
-    leafCount = 0;
     treeSize = 0;
 
     inputTree = aInputTree;
@@ -221,6 +308,7 @@ public class NodeIndexer<D> {
    * node in index arrays, for example, for each node n indexed with its preorder
    * number stores the subtree size rooted at n.
    */
+  // [TODO] Change name to indexNodes and document parameters.
   private int gatherInfo(Node<D> aT, int postorder) {
     int currentSize = 0;
     int childrenCount = 0;
@@ -297,10 +385,9 @@ public class NodeIndexer<D> {
     return postorder;
   }
 
-  public boolean isLeaf(int nodeInPreorderL) {
-    return sizes[nodeInPreorderL] == 1;
-  }
-
+  /**
+   * [TODO] Document it.
+   */
   private void postTraversalProcessing() {
     int currentLeaf = -1;
     for(int i = 0; i < sizes[0]; i++) {
@@ -354,13 +441,64 @@ public class NodeIndexer<D> {
 
   }
 
+  /**
+   * [TODO] Document it.
+   */
   public int getSize() {
     return treeSize;
   }
 
-  public int getLeafCount() {
-    return leafCount;
+  /**
+   * [TODO] Document it.
+   */
+  public boolean isLeaf(int nodeInPreorderL) {
+    return sizes[nodeInPreorderL] == 1;
   }
+
+  /**
+   * [TODO] Document it.
+   */
+  public static int[] toIntArray(ArrayList<Integer> integers) {
+    int ints[] = new int[integers.size()];
+    int i = 0;
+    for (Integer n : integers) {
+      ints[i++] = n.intValue();
+    }
+    return ints;
+  }
+
+  /**
+   * [TODO] Document it.
+   */
+  public void setSwitched(boolean value) {
+    switched = value;
+  }
+
+  /**
+   * [TODO] Document it.
+   */
+  public boolean isSwitched() {
+    return switched;
+  }
+
+  /**
+   * [TODO] Document it.
+   */
+  public int getCurrentNode() {
+    return currentNode;
+  }
+
+  /**
+   * [TODO] Document it.
+   */
+  public void setCurrentNode(int preorderL) {
+    currentNode = preorderL;
+  }
+
+  // [TODO] All methods below are used in APTED. Since we use direct access to
+  //        public fields of this class, these methods should be substituted
+  //        with a direct access (get the pointers to these methods before used
+  //        in APTED).
 
   public int[] getChildren(int node) {
     return children[node];
@@ -388,43 +526,6 @@ public class NodeIndexer<D> {
 
   public int getPreR_to_LN(int node) {
     return preR_to_ln[node];
-  }
-
-  public int getPreL_to_KR_Sum(int node) {
-    return preL_to_kr_sum[node];
-  }
-
-  public int getPreL_to_Rev_KR_Sum(int node) {
-    return preL_to_rev_kr_sum[node];
-  }
-
-  public int getPreL_to_Desc_Sum(int node) {
-    return preL_to_desc_sum[node];
-  }
-
-  public int getCurrentNode() {
-    return currentNode;
-  }
-
-  public void setCurrentNode(int preorderL) {
-    currentNode = preorderL;
-  }
-
-  public static int[] toIntArray(ArrayList<Integer> integers) {
-    int ints[] = new int[integers.size()];
-    int i = 0;
-    for (Integer n : integers) {
-      ints[i++] = n.intValue();
-    }
-    return ints;
-  }
-
-  public void setSwitched(boolean value) {
-    switched = value;
-  }
-
-  public boolean isSwitched() {
-    return switched;
   }
 
 }
