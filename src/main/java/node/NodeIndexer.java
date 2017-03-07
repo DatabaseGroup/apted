@@ -28,12 +28,30 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
-import util.LabelDictionary;
-import util.LblTree;
 import node.Node;
 
 /**
- * Stores various indices on nodes required for efficient computation of APTED.
+ * Indexes nodes of an input tree and stores various indices on nodes required
+ * for efficient computation of APTED [1,2]. Additionally, it stores
+ * single-value properties of the tree.
+ *
+ * <p>For indexing we use four tree traversals that assign ids to the nodes:
+ * <ul>
+ * <li>left-to-right preorder [1],
+ * <li>right-to-left preorder [1],
+ * <li>left-to-right postorder [2],
+ * <li>right-to-left postorder [2].
+ * </ul>
+ *
+ * <p>See the source code for more algorithm-related comments.
+ *
+ * <p>References:
+ * <ul>
+ * <li>[1] M. Pawlik and N. Augsten. Efficient Computation of the Tree Edit
+ *      Distance. ACM Transactions on Database Systems (TODS) 40(1). 2015.
+ * <li>[2] M. Pawlik and N. Augsten. Tree edit distance: Robust and memory-
+ *      efficient. Information Systems 56. 2016.
+ * </ul>
  *
  * @param <D> type of node data.
  */
@@ -48,57 +66,110 @@ public class NodeIndexer<D> {
    */
   private Node<D> inputTree;
 
-  private static final byte LEFT = 0;
-  private static final byte RIGHT = 1;
-  private static final byte HEAVY = 2;
-  public int sizes[];
-  public int parents[];
-  public int preL_to_preR[];
-  public int preR_to_preL[];
+  // [TODO] Be consistent in naming indices: <FROM>_to_<TO>.
+
+  // Structure indices.
 
   /**
-   * Array of pointers to node data objects. Used for cost of edit operations.
+   * Index from left-to-right preorder id of node n (starting with 0) to Node
+   * object corresponding to n. Used for cost of edit operations.
+   *
+   * @see node.Node
    */
   public Node<D> preL_to_node[];
 
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * size of n's subtree (node n and all its descendants).
+   */
+  public int sizes[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * left-to-right preorder id of n's parent.
+   */
+  public int parents[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * array of n's children. Size of children array at node n equals the number
+   * of n's children.
+   */
+  public int children[][];
+
+  /**
+   * Index from left-to-right postorder id of node n (starting with 0) to the
+   * left-to-right postorder id of n's leftmost leaf descendant.
+   */
+  public int postL_to_lld[];
+
+  /**
+   * Index from right-to-left postorder id of node n (starting with 0) to the
+   * right-to-left postorder id of n's rightmost leaf descendant.
+   */
+  public int postR_to_rld[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to the
+   * left-to-right preorder id of the first leaf node to the left of n. If
+   * there is no leaf node to the left of n, it is represented with the value
+   * '-1' [1, Section 8.4].
+   */
   public int preL_to_ln[];
+
+  /**
+   * Index from right-to-left preorder id of node n (starting with 0) to the
+   * right-to-left preorder id of the first leaf node to the right of n. If
+   * there is no leaf node to the right of n, it is represented with the value
+   * '-1' [1, Section 8.4].
+   */
   public int preR_to_ln[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to
+   * a boolean value that states if node n lies on the leftmost path starting
+   * at n's parent [2, Algorithm 1, Lines 26,36].
+   */
+  public boolean nodeType_L[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with 0) to
+   * a boolean value that states if node n lies on the rightmost path starting
+   * at n's parent input tree [2, Section 5.3, Algorithm 1, Lines 26,36].
+   */
+  public boolean nodeType_R[];
+
+  // Traversal translation indices.
+  public int preL_to_preR[];
+  public int preR_to_preL[];
+  public int preL_to_postL[];
+  public int postL_to_preL[];
+  public int preL_to_postR[];
+  public int postR_to_preL[];
+
+  // Cost indices.
   public int preL_to_kr_sum[];
   public int preL_to_rev_kr_sum[];
   public int preL_to_desc_sum[];
 
-  // Added by Victor. From the implementation of RTED for mapping computation.
-  public int postL_to_lld[];
-  public int postR_to_rld[];
-
-  public int preL_to_postL[];
-  public int postL_to_preL[];
-
-  public int preL_to_postR[];
-  public int postR_to_preL[];
-
-  private LabelDictionary ld;
-  public boolean nodeType_L[];
-  public boolean nodeType_R[];
-  public boolean nodeType_H[];
-  public int children[][];
+  // Variables used temporarily while indexing.
   private int sizeTmp;
   private int descSizesTmp;
   private int krSizesSumTmp;
   private int revkrSizesSumTmp;
   private int preorderTmp;
+
+  // Variables holding values modified at runtime while the algorithm executes.
   private int currentNode;
   private boolean switched;
+
+  // Structure single-value variables.
   private int leafCount;
   private int treeSize;
-
-  private int depthTmp;
-  public int depths[];
-
   public int lchl;
   public int rchl;
 
-  public NodeIndexer(Node<D> aInputTree, LabelDictionary aLd) {
+  public NodeIndexer(Node<D> aInputTree) {
     sizeTmp = 0;
     descSizesTmp = 0;
     krSizesSumTmp = 0;
@@ -138,15 +209,149 @@ public class NodeIndexer<D> {
     children = new int[treeSize][];
     nodeType_L = new boolean[treeSize];
     nodeType_R = new boolean[treeSize];
-    nodeType_H = new boolean[treeSize];
-    ld = aLd;
-    currentNode = 0;
 
-    depthTmp = -1;
-    depths = new int[treeSize];
+    currentNode = 0;
 
     gatherInfo(inputTree, -1);
     postTraversalProcessing();
+  }
+
+  /**
+   * Indexes the nodes of the input tree. Stores information about each tree
+   * node in index arrays, for example, for each node n indexed with its preorder
+   * number stores the subtree size rooted at n.
+   */
+  private int gatherInfo(Node<D> aT, int postorder) {
+    int currentSize = 0;
+    int childrenCount = 0;
+    int descSizes = 0;
+    int krSizesSum = 0;
+    int revkrSizesSum = 0;
+    int preorder = preorderTmp;
+    int preorderR = 0;
+    int heavyChild = -1;
+    int weight = -1;
+    int maxWeight = -1;
+    int currentPreorder = -1;
+    ArrayList<Integer> childrenPreorders = new ArrayList<>();
+    preorderTmp++;
+    // Loop over children of a node.
+    Iterator<Node<D>> childrenIt = aT.getChildren().iterator();
+    while (childrenIt.hasNext()) {
+      childrenCount++;
+      currentPreorder = preorderTmp;
+      parents[currentPreorder] = preorder;
+
+      // Execute method recursively for next child.
+      postorder = gatherInfo(childrenIt.next(), postorder);
+
+      childrenPreorders.add(Integer.valueOf(currentPreorder));
+      weight = sizeTmp + 1;
+      if(weight >= maxWeight) {
+          maxWeight = weight;
+          heavyChild = currentPreorder;
+      }
+      currentSize += 1 + sizeTmp;
+      descSizes += descSizesTmp;
+      if(childrenCount > 1) {
+          krSizesSum += krSizesSumTmp + sizeTmp + 1;
+      } else {
+          krSizesSum += krSizesSumTmp;
+          nodeType_L[currentPreorder] = true;
+      }
+      if(childrenIt.hasNext()) {
+          revkrSizesSum += revkrSizesSumTmp + sizeTmp + 1;
+      } else {
+          revkrSizesSum += revkrSizesSumTmp;
+          nodeType_R[currentPreorder] = true;
+      }
+    }
+
+    postorder++;
+
+    int currentDescSizes = descSizes + currentSize + 1;
+    preL_to_desc_sum[preorder] = ((currentSize + 1) * (currentSize + 1 + 3)) / 2 - currentDescSizes;
+    preL_to_kr_sum[preorder] = krSizesSum + currentSize + 1;
+    preL_to_rev_kr_sum[preorder] = revkrSizesSum + currentSize + 1;
+
+    // Store pointer to a node object corresponding to preorder.
+    preL_to_node[preorder] = aT;
+
+    sizes[preorder] = currentSize + 1;
+    preorderR = treeSize - 1 - postorder;
+    preL_to_preR[preorder] = preorderR;
+    preR_to_preL[preorderR] = preorder;
+
+    children[preorder] = toIntArray(childrenPreorders);
+    descSizesTmp = currentDescSizes;
+    sizeTmp = currentSize;
+    krSizesSumTmp = krSizesSum;
+    revkrSizesSumTmp = revkrSizesSum;
+
+    postL_to_preL[postorder] = preorder;
+    preL_to_postL[preorder] = postorder;
+
+    preL_to_postR[preorder] = treeSize-1-preorder;
+    postR_to_preL[treeSize-1-preorder] = preorder;
+
+    return postorder;
+  }
+
+  public boolean isLeaf(int nodeInPreorderL) {
+    return sizes[nodeInPreorderL] == 1;
+  }
+
+  private void postTraversalProcessing() {
+    int currentLeaf = -1;
+    for(int i = 0; i < sizes[0]; i++) {
+      preL_to_ln[i] = currentLeaf;
+      if(isLeaf(i)) {
+          currentLeaf = i;
+      }
+
+      // This block stores leftmost leaf descendants for each node
+      // indexed in postorder. Used for mapping computation.
+      // Added by Victor.
+      int postl = i; // Assume that the for loop iterates postorder.
+      int preorder = postL_to_preL[i];
+      if (sizes[preorder] == 1) {
+        postL_to_lld[postl] = postl;
+      } else {
+        postL_to_lld[postl] = postL_to_lld[preL_to_postL[children[preorder][0]]];
+      }
+      // This block stores rightmost leaf descendants for each node
+      // indexed in right-to-left postorder.
+      // [TODO] Use postL_to_lld and postR_to_rld instead of APTED.getLLD
+      //        and APTED.gerRLD methods, remove these method.
+      //        Result: faster lookup of these values.
+      int postr = i; // Assume that the for loop iterates reversed postorder.
+      preorder = postR_to_preL[postr];
+      if (sizes[preorder] == 1) {
+        postR_to_rld[postr] = postr;
+      } else {
+        postR_to_rld[postr] = postR_to_rld[preL_to_postR[children[preorder][children[preorder].length-1]]];
+      }
+      //lchl and rchl TODO: there are no values for parent node
+      if (sizes[i] == 1) {
+      	int parent = parents[i];
+        if (parent > -1) {
+          if (parent+1 == i) {
+          	lchl++;
+          } else if (preL_to_preR[parent]+1 == preL_to_preR[i]) {
+          	rchl++;
+          }
+        }
+      }
+    }
+
+    currentLeaf = -1;
+    for(int i = 0; i < sizes[0]; i++) {
+      preR_to_ln[i] = currentLeaf;
+      if(isLeaf(preR_to_preL[i])) {
+        currentLeaf = i;
+      }
+    }
+
   }
 
   public int getSize() {
@@ -155,21 +360,6 @@ public class NodeIndexer<D> {
 
   public int getLeafCount() {
     return leafCount;
-  }
-
-  public boolean ifNodeOfType(int postorder, int type) {
-    switch(type)
-    {
-    case 0: // '\0'
-        return nodeType_L[postorder];
-
-    case 1: // '\001'
-        return nodeType_R[postorder];
-
-    case 2: // '\002'
-        return nodeType_H[postorder];
-    }
-    return false;
   }
 
   public int[] getChildren(int node) {
@@ -191,12 +381,6 @@ public class NodeIndexer<D> {
   public int getPreR_to_PreL(int node) {
     return preR_to_preL[node];
   }
-
-  // [TODO] labels don't exist any more
-  // public int getLabels(int node)
-  // {
-  //     return labels[node];
-  // }
 
   public int getPreL_to_LN(int node) {
     return preL_to_ln[node];
@@ -226,185 +410,21 @@ public class NodeIndexer<D> {
     currentNode = preorderL;
   }
 
-  /**
-   * Indexes the nodes of the input tree. Stores information about each tree
-   * node in index arrys, for example, for each node n indexed with its preorder
-   * number stores the subtree size rooted at n.
-   */
-  private int gatherInfo(Node<D> aT, int postorder) {
-  	depthTmp++;
-    int currentSize = 0;
-    int childrenCount = 0;
-    int descSizes = 0;
-    int krSizesSum = 0;
-    int revkrSizesSum = 0;
-    int preorder = preorderTmp;
-    int preorderR = 0;
-    int heavyChild = -1;
-    int weight = -1;
-    int maxWeight = -1;
-    int currentPreorder = -1;
-    ArrayList childrenPreorders = new ArrayList();
-    preorderTmp++;
-    // [TODO] Loop over children of a node.
-    Iterator<Node<D>> childrenIt = aT.getChildren().iterator();
-    while (childrenIt.hasNext()) {
-    // for(Enumeration e = aT.getChildren(); e.hasMoreElements();) {
-      childrenCount++;
-      currentPreorder = preorderTmp;
-      parents[currentPreorder] = preorder;
-
-      // [TODO] Execute method recursively for next child.
-      // postorder = gatherInfo((LblTree)e.nextElement(), postorder);
-      postorder = gatherInfo(childrenIt.next(), postorder);
-
-      childrenPreorders.add(Integer.valueOf(currentPreorder));
-      weight = sizeTmp + 1;
-      if(weight >= maxWeight) {
-          maxWeight = weight;
-          heavyChild = currentPreorder;
-      }
-      currentSize += 1 + sizeTmp;
-      descSizes += descSizesTmp;
-      if(childrenCount > 1) {
-          krSizesSum += krSizesSumTmp + sizeTmp + 1;
-      } else {
-          krSizesSum += krSizesSumTmp;
-          nodeType_L[currentPreorder] = true;
-      }
-      // [TODO] If there is a next child.
-      if(childrenIt.hasNext()) {
-      // if(e.hasMoreElements()) {
-          revkrSizesSum += revkrSizesSumTmp + sizeTmp + 1;
-      } else {
-          revkrSizesSum += revkrSizesSumTmp;
-          nodeType_R[currentPreorder] = true;
-      }
+  public static int[] toIntArray(ArrayList<Integer> integers) {
+    int ints[] = new int[integers.size()];
+    int i = 0;
+    for (Integer n : integers) {
+      ints[i++] = n.intValue();
     }
-
-    postorder++;
-
-    // [TODO] tmp data not present in Node.
-    //        tmpData seems not to be used.
-    // aT.setTmpData(Integer.valueOf(preorder));
-
-    int currentDescSizes = descSizes + currentSize + 1;
-    preL_to_desc_sum[preorder] = ((currentSize + 1) * (currentSize + 1 + 3)) / 2 - currentDescSizes;
-    preL_to_kr_sum[preorder] = krSizesSum + currentSize + 1;
-    preL_to_rev_kr_sum[preorder] = revkrSizesSum + currentSize + 1;
-
-    // [TODO] Store string label in node data.
-    // labels[preorder] = ld.store(aT.getLabel());
-    preL_to_node[preorder] = aT;
-
-    sizes[preorder] = currentSize + 1;
-    preorderR = treeSize - 1 - postorder;
-    preL_to_preR[preorder] = preorderR;
-    preR_to_preL[preorderR] = preorder;
-    if(heavyChild != -1) {
-      nodeType_H[heavyChild] = true;
-    }
-    children[preorder] = toIntArray(childrenPreorders);
-    descSizesTmp = currentDescSizes;
-    sizeTmp = currentSize;
-    krSizesSumTmp = krSizesSum;
-    revkrSizesSumTmp = revkrSizesSum;
-
-
-    postL_to_preL[postorder] = preorder;
-    preL_to_postL[preorder] = postorder;
-
-    preL_to_postR[preorder] = treeSize-1-preorder;
-    postR_to_preL[treeSize-1-preorder] = preorder;
-    // postR to postL : info[13][treeSize - 1 - preorder] = postorder;
-
-    depths[preorder] = depthTmp;
-    depthTmp--;
-    return postorder;
+    return ints;
   }
 
-    public boolean isLeaf(int nodeInPreorderL)
-    {
-        return sizes[nodeInPreorderL] == 1;
-    }
+  public void setSwitched(boolean value) {
+    switched = value;
+  }
 
-    private void postTraversalProcessing()
-    {
-        int currentLeaf = -1;
-        for(int i = 0; i < sizes[0]; i++)
-        {
-            preL_to_ln[i] = currentLeaf;
-            if(isLeaf(i)) {
-                currentLeaf = i;
-            }
+  public boolean isSwitched() {
+    return switched;
+  }
 
-            // This block stores leftmost leaf descendants for each node
-            // indexed in postorder. Used for mapping computation.
-            // Added by Victor.
-            int postl = i; // Assume that the for loop iterates postorder.
-            int preorder = postL_to_preL[i];
-            if (sizes[preorder] == 1)
-                postL_to_lld[postl] = postl;
-            else
-                postL_to_lld[postl] = postL_to_lld[preL_to_postL[children[preorder][0]]];
-
-            // This block stores rightmost leaf descendants for each node
-            // indexed in right-to-left postorder.
-            // [TODO] Implement revpost2_RLD, use both instead of APTED.getLLD
-            //        and APTED.gerRLD methods, remove these method.
-            //        Result: faster lookup of these values.
-            int postr = i; // Assume that the for loop iterates reversed postorder.
-            preorder = postR_to_preL[postr];
-            if (sizes[preorder] == 1)
-                postR_to_rld[postr] = postr;
-            else
-                postR_to_rld[postr] = postR_to_rld[preL_to_postR[children[preorder][children[preorder].length-1]]];
-
-            //lchl and rchl TODO: there are no values for parent node
-            if (sizes[i] == 1) {
-            	int parent = parents[i];
-	            if (parent > -1) {
-		            if (parent+1 == i) {
-		            	lchl++;
-		            } else
-		            if (preL_to_preR[parent]+1 == preL_to_preR[i]) {
-		            	rchl++;
-		            }
-	            }
-            }
-        }
-
-        currentLeaf = -1;
-        for(int i = 0; i < sizes[0]; i++)
-        {
-            preR_to_ln[i] = currentLeaf;
-            if(isLeaf(preR_to_preL[i])) {
-                currentLeaf = i;
-            }
-        }
-
-    }
-
-    public static int[] toIntArray(List integers)
-    {
-        int ints[] = new int[integers.size()];
-        int i = 0;
-        for(Iterator iterator = integers.iterator(); iterator.hasNext();)
-        {
-            Integer n = (Integer)iterator.next();
-            ints[i++] = n.intValue();
-        }
-
-        return ints;
-    }
-
-    public void setSwitched(boolean value)
-    {
-        switched = value;
-    }
-
-    public boolean isSwitched()
-    {
-        return switched;
-    }
 }

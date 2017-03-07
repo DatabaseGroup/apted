@@ -30,8 +30,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Stack;
-import util.LblTree;
-import util.LabelDictionary;
 import node.Node;
 import node.NodeIndexer;
 import node.StringNodeData;
@@ -84,7 +82,6 @@ public class APTED<C extends CostModel, D> {
   private NodeIndexer it2;
   private int size1;
   private int size2;
-  private LabelDictionary ld;
   private float delta[][];
   private float q[];
   private int fn[];
@@ -267,13 +264,8 @@ public class APTED<C extends CostModel, D> {
   }
 
   public void init(Node<D> t1, Node<D> t2) {
-    ld = new LabelDictionary();
-    // [TODO] InfoTree on nodes
-    // it1 = new InfoTree_PLUS(t1, ld);
-    it1 = new NodeIndexer(t1, ld);
-    // it2 = new InfoTree_PLUS(t2, ld);
-    it2 = new NodeIndexer(t2, ld);
-
+    it1 = new NodeIndexer(t1);
+    it2 = new NodeIndexer(t2);
     size1 = it1.getSize();
     size2 = it2.getSize();
   }
@@ -330,6 +322,10 @@ public class APTED<C extends CostModel, D> {
     int[] preR_to_preL_2 = it2.preR_to_preL;
     int[] pre2parent1 = it1.parents;
     int[] pre2parent2 = it2.parents;
+    boolean[] nodeType_L_1 = it1.nodeType_L;
+    boolean[] nodeType_L_2 = it2.nodeType_L;
+    boolean[] nodeType_R_1 = it1.nodeType_R;
+    boolean[] nodeType_R_2 = it2.nodeType_R;
 
     int[] preL_to_postL_1 = it1.preL_to_postL;
     int[] preL_to_postL_2 = it2.preL_to_postL;
@@ -478,12 +474,12 @@ public class APTED<C extends CostModel, D> {
                     cost_Ipointer_parent_v[w] = tmpCost;
                     strategypointer_parent_v[w_in_preL] = strategypointer_v[w_in_preL];
                 }
-                if(it1.ifNodeOfType(v_in_preL, 1))
+                if(nodeType_R_1[v_in_preL])
                 {
                     cost_Ipointer_parent_v[w] += cost_Rpointer_parent_v[w];
                     cost_Rpointer_parent_v[w] += cost_Rpointer_v[w] - minCost;
                 }
-                if(it1.ifNodeOfType(v_in_preL, 0))
+                if(nodeType_L_1[v_in_preL])
                     cost_Lpointer_parent_v[w] += cost_Lpointer_v[w];
                 else
                     cost_Lpointer_parent_v[w] += minCost;
@@ -497,12 +493,12 @@ public class APTED<C extends CostModel, D> {
                     cost2_I[parent_w_postL] = tmpCost;
                     cost2_path[parent_w_postL] = cost2_path[w];
                 }
-                if(it2.ifNodeOfType(w_in_preL, 1))
+                if(nodeType_R_2[w_in_preL])
                 {
                     cost2_I[parent_w_postL] += cost2_R[parent_w_postL];
                     cost2_R[parent_w_postL] += cost2_R[w] - minCost;
                 }
-                if(it2.ifNodeOfType(w_in_preL, 0))
+                if(nodeType_L_2[w_in_preL])
                     cost2_L[parent_w_postL] += cost2_L[w];
                 else
                     cost2_L[parent_w_postL] += minCost;
@@ -555,6 +551,10 @@ public class APTED<C extends CostModel, D> {
 		int[] preR_to_preL_2 = it2.preR_to_preL;
 		int[] pre2parent1 = it1.parents;
 		int[] pre2parent2 = it2.parents;
+    boolean[] nodeType_L_1 = it1.nodeType_L;
+    boolean[] nodeType_L_2 = it2.nodeType_L;
+    boolean[] nodeType_R_1 = it1.nodeType_R;
+    boolean[] nodeType_R_2 = it2.nodeType_R;
 
 		int size_v, parent_v, parent_w, size_w;
 		int leftPath_v, rightPath_v;
@@ -686,12 +686,12 @@ public class APTED<C extends CostModel, D> {
                         cost_Ipointer_parent_v[w] = tmpCost;
                         strategypointer_parent_v[w] = strategypointer_v[w];
                     }
-                    if(it1.ifNodeOfType(v, 0))
+                    if(nodeType_L_1[v])
                     {
                         cost_Ipointer_parent_v[w] += cost_Lpointer_parent_v[w];
                         cost_Lpointer_parent_v[w] += cost_Lpointer_v[w] - minCost;
                     }
-                    if(it1.ifNodeOfType(v, 1))
+                    if(nodeType_R_1[v])
                         cost_Rpointer_parent_v[w] += cost_Rpointer_v[w];
                     else
                         cost_Rpointer_parent_v[w] += minCost;
@@ -706,12 +706,12 @@ public class APTED<C extends CostModel, D> {
                         cost2_I[parent_w] = tmpCost;
                         cost2_path[parent_w] = cost2_path[w];
                     }
-                    if(it2.ifNodeOfType(w, 0))
+                    if(nodeType_L_2[w])
                     {
                         cost2_I[parent_w] += cost2_L[parent_w];
                         cost2_L[parent_w] += cost2_L[w] - minCost;
                     }
-                    if(it2.ifNodeOfType(w, 1))
+                    if(nodeType_R_2[w])
                         cost2_R[parent_w] += cost2_R[w];
                     else
                         cost2_R[parent_w] += minCost;
