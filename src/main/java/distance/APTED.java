@@ -33,6 +33,7 @@ import java.util.Stack;
 import util.LblTree;
 import util.LabelDictionary;
 import node.Node;
+import node.NodeIndexer;
 import node.StringNodeData;
 import costmodel.CostModel;
 import costmodel.StringUnitCostModel;
@@ -79,8 +80,8 @@ public class APTED<C extends CostModel, D> {
    */
   private static final byte INNER = 2;
 
-  private InfoTree_PLUS it1;
-  private InfoTree_PLUS it2;
+  private NodeIndexer it1;
+  private NodeIndexer it2;
   private int size1;
   private int size2;
   private LabelDictionary ld;
@@ -211,7 +212,7 @@ public class APTED<C extends CostModel, D> {
   // incorrect. This is due to delta storing distances between subtrees
   // without the root nodes.
   // i and j are postorder ids of the nodes - starting with 1
-  private void forestDist(InfoTree_PLUS ted1, InfoTree_PLUS ted2, int i, int j, float[][] forestdist) {
+  private void forestDist(NodeIndexer ted1, NodeIndexer ted2, int i, int j, float[][] forestdist) {
 
     forestdist[ted1.postL_to_lld[i-1]][ted2.postL_to_lld[j-1]] = 0;
 
@@ -269,9 +270,9 @@ public class APTED<C extends CostModel, D> {
     ld = new LabelDictionary();
     // [TODO] InfoTree on nodes
     // it1 = new InfoTree_PLUS(t1, ld);
-    it1 = new InfoTree_PLUS(t1, ld);
+    it1 = new NodeIndexer(t1, ld);
     // it2 = new InfoTree_PLUS(t2, ld);
-    it2 = new InfoTree_PLUS(t2, ld);
+    it2 = new NodeIndexer(t2, ld);
 
     size1 = it1.getSize();
     size2 = it2.getSize();
@@ -298,7 +299,7 @@ public class APTED<C extends CostModel, D> {
     }
   }
 
-  public float[][] computeOptStrategyUsingAllPathsOn2_memopt_postL(InfoTree_PLUS it1, InfoTree_PLUS it2) {
+  public float[][] computeOptStrategyUsingAllPathsOn2_memopt_postL(NodeIndexer it1, NodeIndexer it2) {
 
     int size1 = it1.getSize();
     int size2 = it2.getSize();
@@ -523,7 +524,7 @@ public class APTED<C extends CostModel, D> {
     return strategy;
 }
 
-    public float[][] computeOptStrategyUsingAllPathsOn2_memopt_postR(InfoTree_PLUS it1, InfoTree_PLUS it2)
+    public float[][] computeOptStrategyUsingAllPathsOn2_memopt_postR(NodeIndexer it1, NodeIndexer it2)
     {
         int size1 = it1.getSize();
         int size2 = it2.getSize();
@@ -731,7 +732,7 @@ public class APTED<C extends CostModel, D> {
         return strategy;
     }
 
-  private float computeDistUsingLRHPathsStrArray(InfoTree_PLUS it1, InfoTree_PLUS it2) {
+  private float computeDistUsingLRHPathsStrArray(NodeIndexer it1, NodeIndexer it2) {
     int currentSubtree1 = it1.getCurrentNode();
     int currentSubtree2 = it2.getCurrentNode();
     int subtreeSize1 = it1.getSizes(currentSubtree1);
@@ -826,7 +827,7 @@ public class APTED<C extends CostModel, D> {
 
 
   // [TODO] Verify using ren, del, ins costs.
-  private float spfWithPathID_opt_mem(InfoTree_PLUS it1, InfoTree_PLUS it2, int pathID, byte pathType) {
+  private float spfWithPathID_opt_mem(NodeIndexer it1, NodeIndexer it2, int pathID, byte pathType) {
     boolean treesSwitched = it1.isSwitched();
 
     // [TODO] Nodes instead of labels should be used.
@@ -1272,7 +1273,7 @@ public class APTED<C extends CostModel, D> {
     }
 
     // ===================== BEGIN spfL
-    private float spfL(InfoTree_PLUS it1, InfoTree_PLUS it2) {
+    private float spfL(NodeIndexer it1, NodeIndexer it2) {
 
     	int[] keyRoots = new int[it2.sizes[it2.getCurrentNode()]];
 
@@ -1289,7 +1290,7 @@ public class APTED<C extends CostModel, D> {
 
     	return forestdist[it1.sizes[it1.getCurrentNode()]][it2.sizes[it2.getCurrentNode()]];
     }
-    private int computeKeyRoots(InfoTree_PLUS it2, int subtreeRootNode, int pathID, int[] keyRoots, int index) {
+    private int computeKeyRoots(NodeIndexer it2, int subtreeRootNode, int pathID, int[] keyRoots, int index) {
 
     	keyRoots[index] = subtreeRootNode;
     	index++;
@@ -1306,11 +1307,11 @@ public class APTED<C extends CostModel, D> {
     	return index;
     }
     // [TODO] Substitute with postL_to_lld index of InfoTree.
-    private int getLLD(InfoTree_PLUS it, int postorder) {
+    private int getLLD(NodeIndexer it, int postorder) {
     	int preL = it.postL_to_preL[postorder];
     	return it.preL_to_postL[it.preR_to_preL[it.preL_to_preR[preL] + it.sizes[preL] - 1]];
     }
-    private void treeEditDist(InfoTree_PLUS it1, InfoTree_PLUS it2, int it1subtree, int it2subtree, float[][] forestdist) {
+    private void treeEditDist(NodeIndexer it1, NodeIndexer it2, int it1subtree, int it2subtree, float[][] forestdist) {
 
     	// i,j have to be in postorder
     	int i = it1.preL_to_postL[it1subtree];
@@ -1365,7 +1366,7 @@ public class APTED<C extends CostModel, D> {
  	// ===================== END spfL
 
     // ===================== BEGIN spfR
-    private float spfR(InfoTree_PLUS it1, InfoTree_PLUS it2) {
+    private float spfR(NodeIndexer it1, NodeIndexer it2) {
 
     	int[] revKeyRoots = new int[it2.sizes[it2.getCurrentNode()]];
 
@@ -1382,7 +1383,7 @@ public class APTED<C extends CostModel, D> {
 
     	return forestdist[it1.sizes[it1.getCurrentNode()]][it2.sizes[it2.getCurrentNode()]];
     }
-    private int computeRevKeyRoots(InfoTree_PLUS it2, int subtreeRootNode, int pathID, int[] revKeyRoots, int index) {
+    private int computeRevKeyRoots(NodeIndexer it2, int subtreeRootNode, int pathID, int[] revKeyRoots, int index) {
 
     	revKeyRoots[index] = subtreeRootNode;
     	index++;
@@ -1399,11 +1400,11 @@ public class APTED<C extends CostModel, D> {
     	return index;
     }
     // [TODO] Substitute with postR_to_rld index of InfoTree.
-    private int getRLD(InfoTree_PLUS it, int revPostorder) {
+    private int getRLD(NodeIndexer it, int revPostorder) {
     	int preL = it.postR_to_preL[revPostorder];
     	return it.preL_to_postR[preL + it.sizes[preL] - 1];
     }
-    private void revTreeEditDist(InfoTree_PLUS it1, InfoTree_PLUS it2, int it1subtree, int it2subtree, float[][] forestdist) {
+    private void revTreeEditDist(NodeIndexer it1, NodeIndexer it2, int it1subtree, int it2subtree, float[][] forestdist) {
 
     	// i,j have to be in r-l postorder
     	int i = it1.preL_to_postR[it1subtree];
@@ -1458,7 +1459,7 @@ public class APTED<C extends CostModel, D> {
     // ===================== END spfR
 
 
-    private byte getStrategyPathType(int pathIDWithPathIDOffset, int pathIDOffset, InfoTree_PLUS it, int currentRootNodePreL, int currentSubtreeSize)
+    private byte getStrategyPathType(int pathIDWithPathIDOffset, int pathIDOffset, NodeIndexer it, int currentRootNodePreL, int currentSubtreeSize)
     {
     	if (Integer.signum(pathIDWithPathIDOffset) == -1) return LEFT;
 
@@ -1498,12 +1499,12 @@ public class APTED<C extends CostModel, D> {
         this.costMatch = costMatch;
     }
 
-    public InfoTree_PLUS getIt1()
+    public NodeIndexer getIt1()
     {
         return it1;
     }
 
-    public InfoTree_PLUS getIt2()
+    public NodeIndexer getIt2()
     {
         return it2;
     }

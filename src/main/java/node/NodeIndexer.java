@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-package distance;
+package node;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,8 +37,7 @@ import node.Node;
  *
  * @param <D> type of node data.
  */
-// [TODO] Rename to NodeIndex.
-public class InfoTree_PLUS<D> {
+public class NodeIndexer<D> {
 
   /**
    * The input tree to the algorithm that is already parsed to tree structure
@@ -99,7 +98,7 @@ public class InfoTree_PLUS<D> {
   public int lchl;
   public int rchl;
 
-  public InfoTree_PLUS(Node<D> aInputTree, LabelDictionary aLd) {
+  public NodeIndexer(Node<D> aInputTree, LabelDictionary aLd) {
     sizeTmp = 0;
     descSizesTmp = 0;
     krSizesSumTmp = 0;
