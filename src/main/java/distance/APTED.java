@@ -281,9 +281,9 @@ public class APTED<C extends CostModel, D> {
 
     // Compute subtree distances without the root nodes.
     for(int x = 0; x < size1; x++) {
-        int sizeX = it1.getSizes(x);
+        int sizeX = it1.sizes[x];
         for(int y = 0; y < size2; y++) {
-            int sizeY = it2.getSizes(y);
+            int sizeY = it2.sizes[y];
             if(sizeX == 1 || sizeY == 1) {
                 delta[x][y] = (sizeX - 1) * costDel + (sizeY - 1) * costIns;
             }
@@ -735,14 +735,14 @@ public class APTED<C extends CostModel, D> {
   private float computeDistUsingLRHPathsStrArray(NodeIndexer it1, NodeIndexer it2) {
     int currentSubtree1 = it1.getCurrentNode();
     int currentSubtree2 = it2.getCurrentNode();
-    int subtreeSize1 = it1.getSizes(currentSubtree1);
-    int subtreeSize2 = it2.getSizes(currentSubtree2);
+    int subtreeSize1 = it1.sizes[currentSubtree1];
+    int subtreeSize2 = it2.sizes[currentSubtree2];
 
     // SINGLE-NODE SUBTREE
     // [TODO]: modify to custom costs
     //         currently unit cost only
     if ((subtreeSize1 == 1 || subtreeSize2 == 1)) {
-      float result = Math.max(it1.getSizes(currentSubtree1), it2.getSizes(currentSubtree2));
+      float result = Math.max(it1.sizes[currentSubtree1], it2.sizes[currentSubtree2]);
       boolean matchFound = false;
 
       for (int i = currentSubtree1; i < currentSubtree1 + it1.sizes[currentSubtree1]; i++) {
@@ -773,9 +773,9 @@ public class APTED<C extends CostModel, D> {
     int parent = -1;
     if(currentPathNode < pathIDOffset) {
       strategyPathType = getStrategyPathType(strategyPathID, pathIDOffset, it1, currentSubtree1, subtreeSize1);
-      while((parent = it1.getParents(currentPathNode)) >= currentSubtree1) {
+      while((parent = it1.parents[currentPathNode]) >= currentSubtree1) {
         int ai[];
-        int k = (ai = it1.getChildren(parent)).length;
+        int k = (ai = it1.children[parent]).length;
         for(int i = 0; i < k; i++) {
           int child = ai[i];
           if(child != currentPathNode) {
@@ -800,9 +800,9 @@ public class APTED<C extends CostModel, D> {
 
     currentPathNode -= pathIDOffset;
     strategyPathType = getStrategyPathType(strategyPathID, pathIDOffset, it2, currentSubtree2, subtreeSize2);
-    while((parent = it2.getParents(currentPathNode)) >= currentSubtree2) {
+    while((parent = it2.parents[currentPathNode]) >= currentSubtree2) {
       int ai1[];
-      int l = (ai1 = it2.getChildren(parent)).length;
+      int l = (ai1 = it2.children[parent]).length;
       for(int j = 0; j < l; j++) {
         int child = ai1[j];
         if(child != currentPathNode) {
@@ -837,7 +837,14 @@ public class APTED<C extends CostModel, D> {
     // [TODO] Pointer to node.
     Node<D> lFNode;
 
+    int[] it1sizes = it1.sizes;
     int[] it2sizes = it2.sizes;
+    int[] it1parents = it1.parents;
+    int[] it2parents = it2.parents;
+    int[] it1preL_to_preR = it1.preL_to_preR;
+    int[] it2preL_to_preR = it2.preL_to_preR;
+    int[] it1preR_to_preL = it1.preR_to_preL;
+    int[] it2preR_to_preL = it2.preR_to_preL;
 
     int currentSubtreePreL1 = it1.getCurrentNode();
     int currentSubtreePreL2 = it2.getCurrentNode();
@@ -845,8 +852,8 @@ public class APTED<C extends CostModel, D> {
     int currentForestSize1 = 0;
     int currentForestSize2 = 0;
     int tmpForestSize1 = 0;
-    int subtreeSize2 = it2.getSizes(currentSubtreePreL2);
-    int subtreeSize1 = it1.getSizes(currentSubtreePreL1);
+    int subtreeSize2 = it2.sizes[currentSubtreePreL2];
+    int subtreeSize1 = it1.sizes[currentSubtreePreL1];
 
     float[][] t = new float[subtreeSize2+1][subtreeSize2+1];
     float[][] s = new float[subtreeSize1+1][subtreeSize2+1];
@@ -859,8 +866,8 @@ public class APTED<C extends CostModel, D> {
     int endPathNode = pathID;
     int it1PreLoff = endPathNode;
     int it2PreLoff = currentSubtreePreL2;
-    int it1PreRoff = it1.getPreL_to_PreR(endPathNode);
-    int it2PreRoff = it2.getPreL_to_PreR(it2PreLoff);
+    int it1PreRoff = it1preL_to_preR[endPathNode];
+    int it2PreRoff = it2preL_to_preR[it2PreLoff];
 
     // variable declarations which were inside the loops
     int rFlast,lFlast,endPathNode_in_preR,startPathNode_in_preR,parent_of_endPathNode,parent_of_endPathNode_in_preR,
@@ -872,17 +879,17 @@ public class APTED<C extends CostModel, D> {
     float[] sp1spointer,sp2spointer,sp3spointer,sp3deltapointer,swritepointer,sp1tpointer,sp3tpointer;
     byte sp1source,sp3source;
 
-        for(; endPathNode >= currentSubtreePreL1; endPathNode = it1.getParents(endPathNode))
+        for(; endPathNode >= currentSubtreePreL1; endPathNode = it1parents[endPathNode])
         {
         	it1PreLoff = endPathNode;
-            it1PreRoff = it1.getPreL_to_PreR(endPathNode);
+            it1PreRoff = it1preL_to_preR[endPathNode];
 
             rFlast = -1;
             lFlast = -1;
-            endPathNode_in_preR = it1.getPreL_to_PreR(endPathNode);
-            startPathNode_in_preR = startPathNode == -1 ? 0x7fffffff : it1.getPreL_to_PreR(startPathNode);
-            parent_of_endPathNode = it1.getParents(endPathNode);
-            parent_of_endPathNode_in_preR = parent_of_endPathNode == -1 ? 0x7fffffff : it1.getPreL_to_PreR(parent_of_endPathNode);
+            endPathNode_in_preR = it1preL_to_preR[endPathNode];
+            startPathNode_in_preR = startPathNode == -1 ? 0x7fffffff : it1preL_to_preR[startPathNode];
+            parent_of_endPathNode = it1parents[endPathNode];
+            parent_of_endPathNode_in_preR = parent_of_endPathNode == -1 ? 0x7fffffff : it1preL_to_preR[parent_of_endPathNode];
 
 
             if(startPathNode - endPathNode > 1) {
@@ -908,7 +915,7 @@ public class APTED<C extends CostModel, D> {
                 }
                 if(!rightPart)
                     rFlast = endPathNode_in_preR;
-                rGlast = it2.getPreL_to_PreR(currentSubtreePreL2);
+                rGlast = it2preL_to_preR[currentSubtreePreL2];
                 rGfirst = (rGlast + subtreeSize2) - 1;
                 lFlast = rightPart ? endPathNode + 1 : endPathNode;
                 fn[fn.length - 1] = -1;
@@ -921,20 +928,20 @@ public class APTED<C extends CostModel, D> {
                 tmpForestSize1 = currentForestSize1;
                 for(int rG = rGfirst; rG >= rGlast; rG--)
                 {
-                    lGfirst = it2.getPreR_to_PreL(rG);
-                    rG_in_preL = it2.getPreR_to_PreL(rG);
-                    rGminus1_in_preL = rG <= it2.getPreL_to_PreR(currentSubtreePreL2) ? 0x7fffffff : it2.getPreR_to_PreL(rG - 1);
-                    parent_of_rG_in_preL = it2.getParents(rG_in_preL);
+                    lGfirst = it2preR_to_preL[rG];
+                    rG_in_preL = it2preR_to_preL[rG];
+                    rGminus1_in_preL = rG <= it2preL_to_preR[currentSubtreePreL2] ? 0x7fffffff : it2preR_to_preL[rG - 1];
+                    parent_of_rG_in_preL = it2parents[rG_in_preL];
                     if(pathType == 1)
                     {
                         if (lGfirst == currentSubtreePreL2 || rGminus1_in_preL != parent_of_rG_in_preL) lGlast = lGfirst;
-                        else lGlast = it2.getParents(lGfirst)+1;
+                        else lGlast = it2parents[lGfirst]+1;
                     } else
                     {
                     	lGlast = lGfirst == currentSubtreePreL2 ? lGfirst : currentSubtreePreL2+1;
                     }
-                    updateFnArray(it2.getPreL_to_LN(lGfirst), lGfirst, currentSubtreePreL2);
-                    updateFtArray(it2.getPreL_to_LN(lGfirst), lGfirst);
+                    updateFnArray(it2.preL_to_ln[lGfirst], lGfirst, currentSubtreePreL2);
+                    updateFtArray(it2.preL_to_ln[lGfirst], lGfirst);
                     int rF = rFfirst;
                     currentForestSize1 = tmpForestSize1;
 
@@ -942,10 +949,10 @@ public class APTED<C extends CostModel, D> {
                     {
                         if(lF == lFlast && !rightPart) rF = rFlast;
                         currentForestSize1++;
-                        currentForestSize2 = it2.getSizes(lGfirst) - 1;
-                        lF_in_preR = it1.getPreL_to_PreR(lF);
+                        currentForestSize2 = it2sizes[lGfirst] - 1;
+                        lF_in_preR = it1preL_to_preR[lF];
                         fForestIsTree = lF_in_preR == rF;
-                        lFSubtreeSize = it1.getSizes(lF);
+                        lFSubtreeSize = it1sizes[lF];
 
                         // [TODO] Pointer to a node.
                         // lFLabel = it1.getLabels(lF);
@@ -1081,16 +1088,16 @@ public class APTED<C extends CostModel, D> {
                 if(startPathNode == -1)
                 {
                     lFfirst = endPathNode;
-                    rFfirst = it1.getPreL_to_PreR(endPathNode);
+                    rFfirst = it1preL_to_preR[endPathNode];
                 } else
                 {
-                    rFfirst = it1.getPreL_to_PreR(startPathNode) - 1;
+                    rFfirst = it1preL_to_preR[startPathNode] - 1;
                     lFfirst = endPathNode + 1;
                 }
                 lFlast = endPathNode;
                 lGlast = currentSubtreePreL2;
                 lGfirst = (lGlast + subtreeSize2) - 1;
-                rFlast = it1.getPreL_to_PreR(endPathNode);
+                rFlast = it1preL_to_preR[endPathNode];
                 fn[fn.length - 1] = -1;
                 for(int i = currentSubtreePreL2; i < currentSubtreePreL2 + subtreeSize2; i++)
                 {
@@ -1101,20 +1108,20 @@ public class APTED<C extends CostModel, D> {
                 tmpForestSize1 = currentForestSize1;
                 for(int lG = lGfirst; lG >= lGlast; lG--)
                 {
-                    rGfirst = it2.getPreL_to_PreR(lG);
-                    updateFnArray(it2.getPreR_to_LN(rGfirst), rGfirst, it2.getPreL_to_PreR(currentSubtreePreL2));
-                    updateFtArray(it2.getPreR_to_LN(rGfirst), rGfirst);
+                    rGfirst = it2preL_to_preR[lG];
+                    updateFnArray(it2.preR_to_ln[rGfirst], rGfirst, it2preL_to_preR[currentSubtreePreL2]);
+                    updateFtArray(it2.preR_to_ln[rGfirst], rGfirst);
                     int lF = lFfirst;
-                    lGminus1_in_preR = lG <= currentSubtreePreL2 ? 0x7fffffff : it2.getPreL_to_PreR(lG - 1);
-                    parent_of_lG = it2.getParents(lG);
-                    parent_of_lG_in_preR = parent_of_lG == -1 ? -1 : it2.getPreL_to_PreR(parent_of_lG);
+                    lGminus1_in_preR = lG <= currentSubtreePreL2 ? 0x7fffffff : it2preL_to_preR[lG - 1];
+                    parent_of_lG = it2parents[lG];
+                    parent_of_lG_in_preR = parent_of_lG == -1 ? -1 : it2preL_to_preR[parent_of_lG];
                     currentForestSize1 = tmpForestSize1;
                     if(pathType == 0) {
                         if (lG == currentSubtreePreL2) rGlast = rGfirst;
-                        else if(it2.getChildren(parent_of_lG)[0] != lG) rGlast = rGfirst;
-                        else rGlast = it2.getPreL_to_PreR(parent_of_lG)+1;
+                        else if(it2.children[parent_of_lG][0] != lG) rGlast = rGfirst;
+                        else rGlast = it2preL_to_preR[parent_of_lG]+1;
                     } else {
-                        rGlast = rGfirst == it2.getPreL_to_PreR(currentSubtreePreL2) ? rGfirst : it2.getPreL_to_PreR(currentSubtreePreL2);
+                        rGlast = rGfirst == it2preL_to_preR[currentSubtreePreL2] ? rGfirst : it2preL_to_preR[currentSubtreePreL2];
                     }
 
                     for(int rF = rFfirst; rF >= rFlast; rF--)
@@ -1122,9 +1129,9 @@ public class APTED<C extends CostModel, D> {
                         if(rF == rFlast)
                             lF = lFlast;
                         currentForestSize1++;
-                        currentForestSize2 = it2.getSizes(lG) - 1;
-                        rF_in_preL = it1.getPreR_to_PreL(rF);
-                        rFSubtreeSize = it1.getSizes(rF_in_preL);
+                        currentForestSize2 = it2sizes[lG] - 1;
+                        rF_in_preL = it1preR_to_preL[rF];
+                        rFSubtreeSize = it1sizes[rF_in_preL];
                         if(startPathNode > 0) {
                             rFIsConsecutiveNodeOfCurrentPathNode = startPathNode_in_preR - rF == 1;
                             rFIsRightSiblingOfCurrentPathNode = rF + rFSubtreeSize == startPathNode_in_preR;
@@ -1165,7 +1172,7 @@ public class APTED<C extends CostModel, D> {
                         else sp2 = q[rF];
 
                         int rG = rGfirst;
-                        rGfirst_in_preL = it2.getPreR_to_PreL(rGfirst);
+                        rGfirst_in_preL = it2preR_to_preL[rGfirst];
 
                         currentForestSize2++;
 
@@ -1201,7 +1208,7 @@ public class APTED<C extends CostModel, D> {
 
                         while (rG >= rGlast) {
                           currentForestSize2++;
-                          rG_in_preL = it2.getPreR_to_PreL(rG);
+                          rG_in_preL = it2preR_to_preL[rG];
                           switch(sp1source) {
                             case 1: sp1 = sp1spointer[rG - it2PreRoff] + costDel; break;
                             case 2: sp1 = sp1tpointer[rG - it2PreRoff] + costDel; break;
@@ -1298,7 +1305,7 @@ public class APTED<C extends CostModel, D> {
     	int pathNode = pathID;
     	while (pathNode > subtreeRootNode) {
     		int parent = it2.parents[pathNode];
-    		for (int child : it2.getChildren(parent)) {
+    		for (int child : it2.children[parent]) {
     			if (child != pathNode) index = computeKeyRoots(it2, child, it2.preR_to_preL[it2.preL_to_preR[child]+it2.sizes[child]-1], keyRoots, index);
     		}
     		pathNode = parent;
@@ -1391,7 +1398,7 @@ public class APTED<C extends CostModel, D> {
     	int pathNode = pathID;
     	while (pathNode > subtreeRootNode) {
     		int parent = it2.parents[pathNode];
-    		for (int child : it2.getChildren(parent)) {
+    		for (int child : it2.children[parent]) {
     			if (child != pathNode) index = computeRevKeyRoots(it2, child, child+it2.sizes[child]-1, revKeyRoots, index);
     		}
     		pathNode = parent;

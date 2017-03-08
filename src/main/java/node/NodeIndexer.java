@@ -31,8 +31,10 @@ import java.util.Iterator;
 import node.Node;
 
 /**
- * Indexes nodes of an input tree and stores various indices on nodes required
- * for efficient computation of APTED [1,2]. Additionally, it stores
+ * Indexes nodes of the input tree to the algorithm that is already parsed to
+ * tree structure using {@link node.Node} class. Stores various indices on
+ * nodes required for efficient computation of APTED [1,2]. Additionally, it
+ * stores
  * single-value properties of the tree.
  *
  * <p>For indexing we use four tree traversals that assign ids to the nodes:
@@ -54,170 +56,176 @@ import node.Node;
  * </ul>
  *
  * @param <D> type of node data.
+ * @see node.Node
+ * @see parser.InputParser
  */
 public class NodeIndexer<D> {
 
-  /**
-   * The input tree to the algorithm that is already parsed to tree structure
-   * using {@link node.Node} class.
-   *
-   * @see node.Node
-   * @see parser.InputParser
-   */
-  private Node<D> inputTree;
-
-  // [TODO] Be consistent in naming indices: <FROM>_to_<TO>.
+  // [TODO] Be consistent in naming index variables: <FROM>_to_<TO>.
 
   // Structure indices.
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to Node
-   * object corresponding to n. Used for cost of edit operations.
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to Node object corresponding to n. Used for cost of edit operations.
    *
    * @see node.Node
    */
   public Node<D> preL_to_node[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * size of n's subtree (node n and all its descendants).
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the size of n's subtree (node n and all its descendants).
    */
   public int sizes[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * left-to-right preorder id of n's parent.
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the left-to-right preorder id of n's parent.
    */
   public int parents[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * array of n's children. Size of children array at node n equals the number
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the array of n's children. Size of children array at node n equals the number
    * of n's children.
    */
   public int children[][];
 
   /**
-   * Index from left-to-right postorder id of node n (starting with 0) to the
-   * left-to-right postorder id of n's leftmost leaf descendant.
+   * Index from left-to-right postorder id of node n (starting with {@code 0})
+   * to the left-to-right postorder id of n's leftmost leaf descendant.
    */
   public int postL_to_lld[];
 
   /**
-   * Index from right-to-left postorder id of node n (starting with 0) to the
-   * right-to-left postorder id of n's rightmost leaf descendant.
+   * Index from right-to-left postorder id of node n (starting with {@code 0})
+   * to the right-to-left postorder id of n's rightmost leaf descendant.
    */
   public int postR_to_rld[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * left-to-right preorder id of the first leaf node to the left of n. If
-   * there is no leaf node to the left of n, it is represented with the value
-   * '-1' [1, Section 8.4].
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the left-to-right preorder id of the first leaf node to the left of n.
+   * If there is no leaf node to the left of n, it is represented with the
+   * value {@code -1} [1, Section 8.4].
    */
   public int preL_to_ln[];
 
   /**
-   * Index from right-to-left preorder id of node n (starting with 0) to the
-   * right-to-left preorder id of the first leaf node to the right of n. If
-   * there is no leaf node to the right of n, it is represented with the value
-   * '-1' [1, Section 8.4].
+   * Index from right-to-left preorder id of node n (starting with {@code 0})
+   * to the right-to-left preorder id of the first leaf node to the right of n.
+   * If there is no leaf node to the right of n, it is represented with the
+   * value {@code -1} [1, Section 8.4].
    */
   public int preR_to_ln[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to
-   * a boolean value that states if node n lies on the leftmost path starting
-   * at n's parent [2, Algorithm 1, Lines 26,36].
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to a boolean value that states if node n lies on the leftmost path
+   * starting at n's parent [2, Algorithm 1, Lines 26,36].
    */
   public boolean nodeType_L[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to
-   * a boolean value that states if node n lies on the rightmost path starting
-   * at n's parent input tree [2, Section 5.3, Algorithm 1, Lines 26,36].
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to a boolean value that states if node n lies on the rightmost path
+   * starting at n's parent input tree [2, Section 5.3, Algorithm 1, Lines 26,36].
    */
   public boolean nodeType_R[];
 
   // Traversal translation indices.
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * right-to-left preorder id of n.
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the right-to-left preorder id of n.
    */
   public int preL_to_preR[];
 
   /**
-   * Index from right-to-left preorder id of node n (starting with 0) to the
-   * left-to-right preorder id of n.
+   * Index from right-to-left preorder id of node n (starting with {@code 0})
+   * to the left-to-right preorder id of n.
    */
   public int preR_to_preL[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * left-to-right postorder id of n.
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the left-to-right postorder id of n.
    */
   public int preL_to_postL[];
 
   /**
-   * Index from left-to-right postorder id of node n (starting with 0) to the
-   * left-to-right preorder id of n.
+   * Index from left-to-right postorder id of node n (starting with {@code 0})
+   * to the left-to-right preorder id of n.
    */
   public int postL_to_preL[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * right-to-left postorder id of n.
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the right-to-left postorder id of n.
    */
   public int preL_to_postR[];
 
   /**
-   * Index from right-to-left postorder id of node n (starting with 0) to the
-   * left-to-right preorder id of n.
+   * Index from right-to-left postorder id of node n (starting with {@code 0})
+   * to the left-to-right preorder id of n.
    */
   public int postR_to_preL[];
 
   // Cost indices.
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * cost of spf_L (single path function using the leftmost path) for the
-   * subtree rooted at n [1, Section 5.2].
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the cost of spf_L (single path function using the leftmost path) for
+   * the subtree rooted at n [1, Section 5.2].
    */
   public int preL_to_kr_sum[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * cost of spf_R (single path function using the rightmost path) for the
-   * subtree rooted at n [1, Section 5.2].
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the cost of spf_R (single path function using the rightmost path) for
+   * the subtree rooted at n [1, Section 5.2].
    */
   public int preL_to_rev_kr_sum[];
 
   /**
-   * Index from left-to-right preorder id of node n (starting with 0) to the
-   * cost of spf_A (single path function using an inner path) for the subtree
-   * rooted at n [1, Section 5.2].
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the cost of spf_A (single path function using an inner path) for the
+   * subtree rooted at n [1, Section 5.2].
    */
   public int preL_to_desc_sum[];
 
   // Variables holding values modified at runtime while the algorithm executes.
+
+  /**
+   * Stores the left-to-right preorder id of the current subtree's root node.
+   * Used in the tree decomposition phase of APTED [1, Algorithm 1].
+   */
   private int currentNode;
+
+  /**
+   * Stores the information if the original order of the input trees has been
+   * swapped when passing as attributes to the single-path function
+   * [1, Section 3.4].
+   */
   private boolean switched;
 
   // Structure single-value variables.
 
   /**
-   * [TODO] Document it.
+   * Stores the size of the input tree.
    */
   private int treeSize;
 
   /**
-   * [TODO] Document it.
+   * Stores the number of leftmost-child leaf nodes in the input tree
+   * [2, Section 5.3].
    */
   public int lchl;
 
   /**
-   * [TODO] Document it.
+   * Stores the number of rightmost-child leaf nodes in the input tree
+   * [2, Section 5.3].
    */
   public int rchl;
 
@@ -254,62 +262,63 @@ public class NodeIndexer<D> {
    * Indexes the nodes of input trees and stores the indices for quick access
    * from APTED algorithm.
    *
-   * @param aInputTree an input tree to APTED. Its nodes will be indexed.
-   * @param <D> type on node data.
+   * @param inputTree an input tree to APTED. Its nodes will be indexed.
    */
-  public NodeIndexer(Node<D> aInputTree) {
+  public NodeIndexer(Node<D> inputTree) {
+    // Initialise variables.
     sizeTmp = 0;
     descSizesTmp = 0;
     krSizesSumTmp = 0;
     revkrSizesSumTmp = 0;
     preorderTmp = 0;
-    currentNode = -1;
+    currentNode = 0;
     switched = false;
-    treeSize = 0;
-
-    inputTree = aInputTree;
-
     treeSize = inputTree.getNodeCount();
+
+    // Initialise indices with the lengths equal to the tree size.
     sizes = new int[treeSize];
-    parents = new int[treeSize];
     preL_to_preR = new int[treeSize];
     preR_to_preL = new int[treeSize];
-
     preL_to_postL = new int[treeSize];
     postL_to_preL = new int[treeSize];
-
     preL_to_postR = new int[treeSize];
     postR_to_preL = new int[treeSize];
-
-    postL_to_lld = new int[treeSize]; // Added by Viktor. For mapping computation.
+    postL_to_lld = new int[treeSize];
     postR_to_rld = new int[treeSize];
-
-    // Store a pointer to node data.
     preL_to_node = new Node[treeSize];
-
     preL_to_ln = new int[treeSize];
     preR_to_ln = new int[treeSize];
     preL_to_kr_sum = new int[treeSize];
     preL_to_rev_kr_sum = new int[treeSize];
     preL_to_desc_sum = new int[treeSize];
-    Arrays.fill(parents, -1);
     children = new int[treeSize][];
     nodeType_L = new boolean[treeSize];
     nodeType_R = new boolean[treeSize];
+    parents = new int[treeSize];
+    parents[0] = -1; // The root has no parent.
 
-    currentNode = 0;
-
-    gatherInfo(inputTree, -1);
-    postTraversalProcessing();
+    // Index the nodes.
+    indexNodes(inputTree, -1);
+    postTraversalIndexing();
   }
 
   /**
    * Indexes the nodes of the input tree. Stores information about each tree
-   * node in index arrays, for example, for each node n indexed with its preorder
-   * number stores the subtree size rooted at n.
+   * node in index arrays. It computes the following indices: {@link #parents},
+   * {@link #children}, {@link #nodeType_L}, {@link #nodeType_R},
+   * {@link #preL_to_desc_sum}, {@link #preL_to_kr_sum},
+   * {@link #preL_to_rev_kr_sum}, {@link #preL_to_node}, {@link #sizes},
+   * {@link #preL_to_preR}, {@link #preR_to_preL}, {@link #postL_to_preL},
+   * {@link #preL_to_postL}, {@link #preL_to_postR}, {@link #postR_to_preL}.
+   *
+   * <p>It is a recursive method that traverses the tree once.
+   *
+   * @param node is the current node while traversing the input tree.
+   * @param postorder is the postorder id of the current node.
+   * @return postorder id of the current node.
    */
-  // [TODO] Change name to indexNodes and document parameters.
-  private int gatherInfo(Node<D> aT, int postorder) {
+  private int indexNodes(Node<D> node, int postorder) {
+    // Initialise variables.
     int currentSize = 0;
     int childrenCount = 0;
     int descSizes = 0;
@@ -317,28 +326,25 @@ public class NodeIndexer<D> {
     int revkrSizesSum = 0;
     int preorder = preorderTmp;
     int preorderR = 0;
-    int heavyChild = -1;
-    int weight = -1;
-    int maxWeight = -1;
     int currentPreorder = -1;
+    // Initialise empty array to store children of this node.
     ArrayList<Integer> childrenPreorders = new ArrayList<>();
+
+    // Store the preorder id of the current node to use it after the recursion.
     preorderTmp++;
+
     // Loop over children of a node.
-    Iterator<Node<D>> childrenIt = aT.getChildren().iterator();
+    Iterator<Node<D>> childrenIt = node.getChildren().iterator();
     while (childrenIt.hasNext()) {
       childrenCount++;
       currentPreorder = preorderTmp;
       parents[currentPreorder] = preorder;
 
       // Execute method recursively for next child.
-      postorder = gatherInfo(childrenIt.next(), postorder);
+      postorder = indexNodes(childrenIt.next(), postorder);
 
       childrenPreorders.add(Integer.valueOf(currentPreorder));
-      weight = sizeTmp + 1;
-      if(weight >= maxWeight) {
-          maxWeight = weight;
-          heavyChild = currentPreorder;
-      }
+
       currentSize += 1 + sizeTmp;
       descSizes += descSizesTmp;
       if(childrenCount > 1) {
@@ -363,7 +369,7 @@ public class NodeIndexer<D> {
     preL_to_rev_kr_sum[preorder] = revkrSizesSum + currentSize + 1;
 
     // Store pointer to a node object corresponding to preorder.
-    preL_to_node[preorder] = aT;
+    preL_to_node[preorder] = node;
 
     sizes[preorder] = currentSize + 1;
     preorderR = treeSize - 1 - postorder;
@@ -371,6 +377,7 @@ public class NodeIndexer<D> {
     preR_to_preL[preorderR] = preorder;
 
     children[preorder] = toIntArray(childrenPreorders);
+
     descSizesTmp = currentDescSizes;
     sizeTmp = currentSize;
     krSizesSumTmp = krSizesSum;
@@ -378,7 +385,6 @@ public class NodeIndexer<D> {
 
     postL_to_preL[postorder] = preorder;
     preL_to_postL[preorder] = postorder;
-
     preL_to_postR[preorder] = treeSize-1-preorder;
     postR_to_preL[treeSize-1-preorder] = preorder;
 
@@ -386,9 +392,15 @@ public class NodeIndexer<D> {
   }
 
   /**
-   * [TODO] Document it.
+   * Indexes the nodes of the input tree. It computes the following indices,
+   * which could not be computed immediately while traversing the tree in
+   * {@link indexNodes}: {@link #preL_to_ln}, {@link #postL_to_lld},
+   * {@link #postR_to_rld}, {@link #preR_to_ln}.
+   *
+   * <p>Runs in linear time in the input tree size. Currently requires two
+   * loops over input tree nodes. Can be reduced to one loop (see the code).
    */
-  private void postTraversalProcessing() {
+  private void postTraversalIndexing() {
     int currentLeaf = -1;
     for(int i = 0; i < sizes[0]; i++) {
       preL_to_ln[i] = currentLeaf;
@@ -418,7 +430,8 @@ public class NodeIndexer<D> {
       } else {
         postR_to_rld[postr] = postR_to_rld[preL_to_postR[children[preorder][children[preorder].length-1]]];
       }
-      //lchl and rchl TODO: there are no values for parent node
+      // Count lchl and rchl.
+      // [TODO] There are no values for parent node.
       if (sizes[i] == 1) {
       	int parent = parents[i];
         if (parent > -1) {
@@ -432,6 +445,7 @@ public class NodeIndexer<D> {
     }
 
     currentLeaf = -1;
+    // [TODO] Merge with the other loop. Assume different traversal.
     for(int i = 0; i < sizes[0]; i++) {
       preR_to_ln[i] = currentLeaf;
       if(isLeaf(preR_to_preL[i])) {
@@ -442,23 +456,33 @@ public class NodeIndexer<D> {
   }
 
   /**
-   * [TODO] Document it.
+   * Returns the number of nodes in the input tree.
+   *
+   * @return number of nodes in the tree.
    */
   public int getSize() {
     return treeSize;
   }
 
   /**
-   * [TODO] Document it.
+   * Verifies if node is a leaf.
+   *
+   * @param node preorder id of a node to verify.
+   * @return {@code true} if {@code node} is a leaf, {@code false} otherwise.
    */
-  public boolean isLeaf(int nodeInPreorderL) {
-    return sizes[nodeInPreorderL] == 1;
+  public boolean isLeaf(int node) {
+    return sizes[node] == 1;
   }
 
   /**
-   * [TODO] Document it.
+   * Converts {@link ArrayList} of integer values to an array. Reads all items
+   * in the list and copies to the output array. The size of output array equals
+   * the number of elements in the list.
+   *
+   * @param integers ArrayList with integer values.
+   * @return array with values from input ArrayList.
    */
-  public static int[] toIntArray(ArrayList<Integer> integers) {
+  private int[] toIntArray(ArrayList<Integer> integers) {
     int ints[] = new int[integers.size()];
     int i = 0;
     for (Integer n : integers) {
@@ -468,64 +492,44 @@ public class NodeIndexer<D> {
   }
 
   /**
-   * [TODO] Document it.
+   * Stores the information if the original order of the input trees has been
+   * swapped when passing as attributes to the single-path function
+   * [1, Section 3.4].
+   *
+   * @param value {@code true} if trees are switched and {@code false}
+   * otherwise.
    */
   public void setSwitched(boolean value) {
     switched = value;
   }
 
   /**
-   * [TODO] Document it.
+   * Verifies if the input trees have been swapped when passing as attributes
+   * to the single-path function [1, Section 3.4].
+   * @return {@code true} if trees are swapped, {@code false} otherwise.
    */
   public boolean isSwitched() {
     return switched;
   }
 
   /**
-   * [TODO] Document it.
+   * Returns the root node of the currently processed subtree in the tree
+   * decomposition part of APTED [1, Algorithm 1]. At each point, we have to
+   * know which subtree do we process.
+   *
+   * @return current subtree root node.
    */
   public int getCurrentNode() {
     return currentNode;
   }
 
   /**
-   * [TODO] Document it.
+   * Stores the root nodes's preorder id of the currently processes subtree.
+   *
+   * @param preorder preorder id of the root node.
    */
-  public void setCurrentNode(int preorderL) {
-    currentNode = preorderL;
-  }
-
-  // [TODO] All methods below are used in APTED. Since we use direct access to
-  //        public fields of this class, these methods should be substituted
-  //        with a direct access (get the pointers to these methods before used
-  //        in APTED).
-
-  public int[] getChildren(int node) {
-    return children[node];
-  }
-
-  public int getSizes(int node) {
-    return sizes[node];
-  }
-
-  public int getParents(int node) {
-    return parents[node];
-  }
-
-  public int getPreL_to_PreR(int node) {
-    return preL_to_preR[node];
-  }
-
-  public int getPreR_to_PreL(int node) {
-    return preR_to_preL[node];
-  }
-
-  public int getPreL_to_LN(int node) {
-    return preL_to_ln[node];
-  }
-
-  public int getPreR_to_LN(int node) {
-    return preR_to_ln[node];
+  public void setCurrentNode(int preorder) {
+    currentNode = preorder;
   }
 
 }
