@@ -63,6 +63,7 @@ import costmodel.StringUnitCostModel;
  * @param <D> type of node data.
  */
 public class APTED<C extends CostModel, D> {
+
   /**
    * Identifier of left path type = {@value LEFT};
    */
@@ -80,13 +81,19 @@ public class APTED<C extends CostModel, D> {
 
   private NodeIndexer it1;
   private NodeIndexer it2;
+
   private int size1;
   private int size2;
+
   private float delta[][];
   private float q[];
+
   private int fn[];
   private int ft[];
+
   private long counter;
+
+// [TODO] USE COST MODEL.
   private float costDel;
   private float costIns;
   private float costMatch;
@@ -96,6 +103,8 @@ public class APTED<C extends CostModel, D> {
   // [TODO] get cost model object for edit costs
 
   public APTED(float delCost, float insCost, float matchCost, C costModel) {
+
+    // [TODO] USE COST MODEL.
     counter = 0L;
     costDel = delCost;
     costIns = insCost;
@@ -173,11 +182,11 @@ public class APTED<C extends CostModel, D> {
       int row = lastRow;
       int col = lastCol;
       while ((row > firstRow) || (col > firstCol)) {
-        if ((row > firstRow) && (forestdist[row - 1][col] + costDel == forestdist[row][col])) {
+        if ((row > firstRow) && (forestdist[row - 1][col] + costDel == forestdist[row][col])) {// [TODO] USE COST MODEL.
           // node with postorderID row is deleted from ted1
           editMapping.push(new int[] { row, 0 });
           row--;
-        } else if ((col > firstCol) && (forestdist[row][col - 1] + costIns == forestdist[row][col])) {
+        } else if ((col > firstCol) && (forestdist[row][col - 1] + costIns == forestdist[row][col])) {// [TODO] USE COST MODEL.
           // node with postorderID col is inserted into ted2
           editMapping.push(new int[] { 0, col });
           col--;
@@ -214,9 +223,9 @@ public class APTED<C extends CostModel, D> {
     forestdist[ted1.postL_to_lld[i-1]][ted2.postL_to_lld[j-1]] = 0;
 
     for (int di = ted1.postL_to_lld[i-1]+1; di <= i; di++) {
-      forestdist[di][ted2.postL_to_lld[j-1]] = forestdist[di - 1][ted2.postL_to_lld[j-1]] + costDel;
+      forestdist[di][ted2.postL_to_lld[j-1]] = forestdist[di - 1][ted2.postL_to_lld[j-1]] + costDel;// [TODO] USE COST MODEL.
       for (int dj = ted2.postL_to_lld[j-1]+1; dj <= j; dj++) {
-        forestdist[ted1.postL_to_lld[i-1]][dj] = forestdist[ted1.postL_to_lld[i-1]][dj - 1] + costIns;
+        forestdist[ted1.postL_to_lld[i-1]][dj] = forestdist[ted1.postL_to_lld[i-1]][dj - 1] + costIns;// [TODO] USE COST MODEL.
         float costRen = 0;
         // [TODO] RENAME COST
         // if (ted1.labels[ted1.postL_to_preL[di-1]] != ted2.labels[ted2.postL_to_preL[dj-1]]) {
@@ -225,8 +234,8 @@ public class APTED<C extends CostModel, D> {
         costRen = costModel.ren(ted1.preL_to_node[ted1.postL_to_preL[di-1]], ted2.preL_to_node[ted2.postL_to_preL[dj-1]]);
         if ((ted1.postL_to_lld[di-1] == ted1.postL_to_lld[i-1]) && (ted2.postL_to_lld[dj-1] == ted2.postL_to_lld[j-1])) {
           forestdist[di][dj] = Math.min(Math.min(
-                  forestdist[di - 1][dj] + costDel,
-                  forestdist[di][dj - 1] + costIns),
+                  forestdist[di - 1][dj] + costDel,// [TODO] USE COST MODEL.
+                  forestdist[di][dj - 1] + costIns),// [TODO] USE COST MODEL.
                   forestdist[di - 1][dj - 1] + costRen);
           // If substituted with delta, this will overwrite the value
           // in delta.
@@ -239,8 +248,8 @@ public class APTED<C extends CostModel, D> {
           // di and dj are postorder ids of the nodes - starting with 1
           // Substituted 'treedist[di][dj]' with 'delta[it1.postL_to_preL[di-1]][it2.postL_to_preL[dj-1]]'
           forestdist[di][dj] = Math.min(Math.min(
-                  forestdist[di - 1][dj] + costDel,
-                  forestdist[di][dj - 1] + costIns),
+                  forestdist[di - 1][dj] + costDel,// [TODO] USE COST MODEL.
+                  forestdist[di][dj - 1] + costIns),// [TODO] USE COST MODEL.
                   forestdist[ted1.postL_to_lld[di-1]][ted2.postL_to_lld[dj-1]] + delta[it1.postL_to_preL[di-1]][it2.postL_to_preL[dj-1]] + costRen);
         }
       }
@@ -251,9 +260,9 @@ public class APTED<C extends CostModel, D> {
     float cost = 0.0f;
     for (int i = 0; i < mapping.size(); i++) {
       if (mapping.get(i)[0] == 0) {
-          cost += costIns;
+          cost += costIns;// [TODO] USE COST MODEL.
       } else if (mapping.get(i)[1] == 0) {
-          cost += costDel;
+          cost += costDel;// [TODO] USE COST MODEL.
       } else {
         // [TODO] RENAME COST
         // cost += (it1.getLabels(it1.postL_to_preL[mapping.get(i)[0]-1]) == it2.getLabels(it2.postL_to_preL[mapping.get(i)[1]-1])) ? 0 : costMatch;
@@ -285,7 +294,7 @@ public class APTED<C extends CostModel, D> {
         for(int y = 0; y < size2; y++) {
             int sizeY = it2.sizes[y];
             if(sizeX == 1 || sizeY == 1) {
-                delta[x][y] = (sizeX - 1) * costDel + (sizeY - 1) * costIns;
+                delta[x][y] = (sizeX - 1) * costDel + (sizeY - 1) * costIns;// [TODO] USE COST MODEL.
             }
         }
     }
@@ -976,13 +985,13 @@ public class APTED<C extends CostModel, D> {
                             sp3source = 2;
                         } else {
                             if(lFIsConsecutiveNodeOfCurrentPathNode) sp1source = 2;
-                            sp3 = currentForestSize1 - lFSubtreeSize * costDel;
+                            sp3 = currentForestSize1 - lFSubtreeSize * costDel;// [TODO] USE COST MODEL.
                             if(lFIsLeftSiblingOfCurrentPathNode) sp3source = 3;
                         }
 
                         if (sp3source == 1) sp3spointer = s[(lF + lFSubtreeSize) - it1PreLoff];
 
-                        if(currentForestSize2 + 1 == 1) sp2 = currentForestSize1 * costDel;
+                        if(currentForestSize2 + 1 == 1) sp2 = currentForestSize1 * costDel;// [TODO] USE COST MODEL.
                         else sp2 = q[lF];
                         int lG = lGfirst;
                         currentForestSize2++;
@@ -990,11 +999,11 @@ public class APTED<C extends CostModel, D> {
                         switch(sp1source) {
                         	case 1: sp1 = sp1spointer[lG - it2PreLoff]; break;
                         	case 2: sp1 = t[lG - it2PreLoff][rG - it2PreRoff]; break;
-                        	case 3: sp1 = currentForestSize2 * costIns; break;
+                        	case 3: sp1 = currentForestSize2 * costIns; break;// [TODO] USE COST MODEL.
                         }
-                        sp1 += costDel;
+                        sp1 += costDel;// [TODO] USE COST MODEL.
                         minCost = sp1;
-                        sp2 += costIns;
+                        sp2 += costIns;// [TODO] USE COST MODEL.
                         if(sp2 < minCost) minCost = sp2;
 
                         if (sp3 < minCost) {
@@ -1018,11 +1027,11 @@ public class APTED<C extends CostModel, D> {
                         while (lG >= lGlast) {
                           currentForestSize2++;
                           switch(sp1source) {
-                            case 1: sp1 = sp1spointer[lG - it2PreLoff] + costDel; break;
-                            case 2: sp1 = t[lG - it2PreLoff][rG - it2PreRoff] + costDel; break;
-                            case 3: sp1 = currentForestSize2 * costIns + costDel; break;
+                            case 1: sp1 = sp1spointer[lG - it2PreLoff] + costDel; break;// [TODO] USE COST MODEL.
+                            case 2: sp1 = t[lG - it2PreLoff][rG - it2PreRoff] + costDel; break;// [TODO] USE COST MODEL.
+                            case 3: sp1 = currentForestSize2 * costIns + costDel; break;// [TODO] USE COST MODEL.
                           }
-                          sp2 = sp2spointer[fn[lG] - it2PreLoff] + costDel;
+                          sp2 = sp2spointer[fn[lG] - it2PreLoff] + costDel;// [TODO] USE COST MODEL.
 
                           minCost = sp1;
                           if(sp2 < minCost) {
@@ -1033,7 +1042,7 @@ public class APTED<C extends CostModel, D> {
                           if (sp3 < minCost) {
                             switch(sp3source) {
                                 case 1: sp3 += sp3spointer[fn[(lG + it2sizes[lG]) - 1] - it2PreLoff]; break;
-                                case 2: sp3 += (currentForestSize2 - it2sizes[lG]) * costIns; break;
+                                case 2: sp3 += (currentForestSize2 - it2sizes[lG]) * costIns; break;// [TODO] USE COST MODEL.
                                 case 3: sp3 += t[fn[(lG + it2sizes[lG]) - 1] - it2PreLoff][rG - it2PreRoff]; break;
                             }
                             if (sp3 < minCost) {
@@ -1162,13 +1171,13 @@ public class APTED<C extends CostModel, D> {
                             sp3source = 2;
                         } else {
                             if (rFIsConsecutiveNodeOfCurrentPathNode) sp1source = 2;
-                            sp3 = currentForestSize1 - rFSubtreeSize * costDel;
+                            sp3 = currentForestSize1 - rFSubtreeSize * costDel;// [TODO] USE COST MODEL.
                             if (rFIsRightSiblingOfCurrentPathNode) sp3source = 3;
                         }
 
                         if (sp3source == 1) sp3spointer = s[(rF + rFSubtreeSize) - it1PreRoff];
 
-                        if (currentForestSize2 + 1 == 1) sp2 = currentForestSize1 * costDel;
+                        if (currentForestSize2 + 1 == 1) sp2 = currentForestSize1 * costDel;// [TODO] USE COST MODEL.
                         else sp2 = q[rF];
 
                         int rG = rGfirst;
@@ -1179,11 +1188,11 @@ public class APTED<C extends CostModel, D> {
                         switch(sp1source) {
                           case 1: sp1 = sp1spointer[rG - it2PreRoff]; break;
                           case 2: sp1 = sp1tpointer[rG - it2PreRoff]; break;
-                          case 3: sp1 = currentForestSize2 * costIns; break;
+                          case 3: sp1 = currentForestSize2 * costIns; break;// [TODO] USE COST MODEL.
                         }
-                        sp1 += costDel;
+                        sp1 += costDel;// [TODO] USE COST MODEL.
                         minCost = sp1;
-                        sp2 += costIns;
+                        sp2 += costIns;// [TODO] USE COST MODEL.
                         if(sp2 < minCost) {
                           minCost = sp2;
                         }
@@ -1210,11 +1219,11 @@ public class APTED<C extends CostModel, D> {
                           currentForestSize2++;
                           rG_in_preL = it2preR_to_preL[rG];
                           switch(sp1source) {
-                            case 1: sp1 = sp1spointer[rG - it2PreRoff] + costDel; break;
-                            case 2: sp1 = sp1tpointer[rG - it2PreRoff] + costDel; break;
-                            case 3: sp1 = currentForestSize2 * costIns + costDel; break;
+                            case 1: sp1 = sp1spointer[rG - it2PreRoff] + costDel; break;// [TODO] USE COST MODEL.
+                            case 2: sp1 = sp1tpointer[rG - it2PreRoff] + costDel; break;// [TODO] USE COST MODEL.
+                            case 3: sp1 = currentForestSize2 * costIns + costDel; break;// [TODO] USE COST MODEL.
                           }
-                          sp2 = sp2spointer[fn[rG] - it2PreRoff] + costIns;
+                          sp2 = sp2spointer[fn[rG] - it2PreRoff] + costIns;// [TODO] USE COST MODEL.
 
                           minCost = sp1;
                           if(sp2 < minCost) {
@@ -1225,7 +1234,7 @@ public class APTED<C extends CostModel, D> {
                           if (sp3 < minCost) {
                             switch(sp3source) {
                               case 1: sp3 += sp3spointer[fn[(rG + it2sizes[rG_in_preL]) - 1] - it2PreRoff]; break;
-                              case 2: sp3 += (currentForestSize2 - it2sizes[rG_in_preL]) * costIns; break;
+                              case 2: sp3 += (currentForestSize2 - it2sizes[rG_in_preL]) * costIns; break;// [TODO] USE COST MODEL.
                               case 3: sp3 += sp3tpointer[fn[(rG + it2sizes[rG_in_preL]) - 1] - it2PreRoff]; break;
                             }
 
@@ -1349,8 +1358,8 @@ public class APTED<C extends CostModel, D> {
 
                 if(getLLD(it1,i1 + ioff) == getLLD(it1,i) && getLLD(it2,j1 + joff) == getLLD(it2,j))
                 {
-                    da = forestdist[i1 - 1][j1] + costDel;
-                    db = forestdist[i1][j1 - 1] + costIns;
+                    da = forestdist[i1 - 1][j1] + costDel;// [TODO] USE COST MODEL.
+                    db = forestdist[i1][j1 - 1] + costIns;// [TODO] USE COST MODEL.
                     dc = forestdist[i1 - 1][j1 - 1] + u;
                     forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
                     if (switched) {
@@ -1360,8 +1369,8 @@ public class APTED<C extends CostModel, D> {
                     }
                 } else
                 {
-                    da = forestdist[i1 - 1][j1] + costDel;
-                    db = forestdist[i1][j1 - 1] + costIns;
+                    da = forestdist[i1 - 1][j1] + costDel;// [TODO] USE COST MODEL.
+                    db = forestdist[i1][j1 - 1] + costIns;// [TODO] USE COST MODEL.
                     dc = forestdist[getLLD(it1,i1 + ioff) - 1 - ioff][getLLD(it2,j1 + joff) - 1 - joff] +
                     		(switched ? delta[it2.postL_to_preL[j1 + joff]][it1.postL_to_preL[i1 + ioff]] : delta[it1.postL_to_preL[i1 + ioff]][it2.postL_to_preL[j1 + joff]]) + u;
                     forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
@@ -1442,8 +1451,8 @@ public class APTED<C extends CostModel, D> {
 
                 if(getRLD(it1,i1 + ioff) == getRLD(it1,i) && getRLD(it2,j1 + joff) == getRLD(it2,j))
                 {
-                    da = forestdist[i1 - 1][j1] + costDel;
-                    db = forestdist[i1][j1 - 1] + costIns;
+                    da = forestdist[i1 - 1][j1] + costDel;// [TODO] USE COST MODEL.
+                    db = forestdist[i1][j1 - 1] + costIns;// [TODO] USE COST MODEL.
                     dc = forestdist[i1 - 1][j1 - 1] + u;
                     forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
                     if (switched) {
@@ -1453,8 +1462,8 @@ public class APTED<C extends CostModel, D> {
                     }
                 } else
                 {
-                    da = forestdist[i1 - 1][j1] + costDel;
-                    db = forestdist[i1][j1 - 1] + costIns;
+                    da = forestdist[i1 - 1][j1] + costDel;// [TODO] USE COST MODEL.
+                    db = forestdist[i1][j1 - 1] + costIns;// [TODO] USE COST MODEL.
                     dc = forestdist[getRLD(it1,i1 + ioff) - 1 - ioff][getRLD(it2,j1 + joff) - 1 - joff] +
                     		(switched ? delta[it2.postR_to_preL[j1 + joff]][it1.postR_to_preL[i1 + ioff]] : delta[it1.postR_to_preL[i1 + ioff]][it2.postR_to_preL[j1 + joff]]) + u;
                     forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
@@ -1499,6 +1508,7 @@ public class APTED<C extends CostModel, D> {
             ft[fn[node]] = node;
     }
 
+    // [TODO] Delete. The costs should be maintained in the cost model.
     public void setCustomCosts(float costDel, float costIns, float costMatch)
     {
         this.costDel = costDel;
