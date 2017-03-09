@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
 import node.Node;
+import costmodel.CostModel;
 
 /**
  * Indexes nodes of the input tree to the algorithm that is already parsed to
@@ -56,10 +57,11 @@ import node.Node;
  * </ul>
  *
  * @param <D> type of node data.
+ * @param <C> type of cost model.
  * @see node.Node
  * @see parser.InputParser
  */
-public class NodeIndexer<D> {
+public class NodeIndexer<D, C extends CostModel> {
 
   // [TODO] Be consistent in naming index variables: <FROM>_to_<TO>.
 
@@ -195,6 +197,9 @@ public class NodeIndexer<D> {
    */
   public int preL_to_desc_sum[];
 
+  public float preL_to_sumDelCost[];
+  public float preL_to_sumInsCost[];
+
   // Variables holding values modified at runtime while the algorithm executes.
 
   /**
@@ -258,13 +263,15 @@ public class NodeIndexer<D> {
    */
   private int preorderTmp;
 
+  private C costModel;
+
   /**
    * Indexes the nodes of input trees and stores the indices for quick access
    * from APTED algorithm.
    *
    * @param inputTree an input tree to APTED. Its nodes will be indexed.
    */
-  public NodeIndexer(Node<D> inputTree) {
+  public NodeIndexer(Node<D> inputTree, C costModel) {
     // Initialise variables.
     sizeTmp = 0;
     descSizesTmp = 0;
@@ -291,11 +298,17 @@ public class NodeIndexer<D> {
     preL_to_kr_sum = new int[treeSize];
     preL_to_rev_kr_sum = new int[treeSize];
     preL_to_desc_sum = new int[treeSize];
+
+    preL_to_sumDelCost = new float[treeSize];
+    preL_to_sumInsCost = new float[treeSize];
+
     children = new int[treeSize][];
     nodeType_L = new boolean[treeSize];
     nodeType_R = new boolean[treeSize];
     parents = new int[treeSize];
     parents[0] = -1; // The root has no parent.
+
+    this.costModel = costModel;
 
     // Index the nodes.
     indexNodes(inputTree, -1);
@@ -402,7 +415,9 @@ public class NodeIndexer<D> {
    */
   private void postTraversalIndexing() {
     int currentLeaf = -1;
-    for(int i = 0; i < sizes[0]; i++) {
+    int nodeForSum = -1;
+    int parentForSum = -1;
+    for(int i = 0; i < treeSize; i++) {
       preL_to_ln[i] = currentLeaf;
       if(isLeaf(i)) {
           currentLeaf = i;
@@ -433,7 +448,7 @@ public class NodeIndexer<D> {
       // Count lchl and rchl.
       // [TODO] There are no values for parent node.
       if (sizes[i] == 1) {
-      	int parent = parents[i];
+        int parent = parents[i];
         if (parent > -1) {
           if (parent+1 == i) {
           	lchl++;
@@ -441,6 +456,19 @@ public class NodeIndexer<D> {
           	rchl++;
           }
         }
+      }
+
+      // Sum up costs of deleting and inserting entire subtrees.
+      // Reverse the node index. Here, we need traverse nodes bottom-up.
+      nodeForSum = treeSize - i - 1;
+      parentForSum = parents[nodeForSum];
+      // Update myself.
+      preL_to_sumDelCost[nodeForSum] += costModel.del(preL_to_node[nodeForSum]);
+      preL_to_sumInsCost[nodeForSum] += costModel.ins(preL_to_node[nodeForSum]);
+      if (parentForSum > -1) {
+        // Update my parent.
+        preL_to_sumDelCost[parentForSum] += preL_to_sumDelCost[nodeForSum];
+        preL_to_sumInsCost[parentForSum] += preL_to_sumInsCost[nodeForSum];
       }
     }
 
@@ -452,7 +480,50 @@ public class NodeIndexer<D> {
         currentLeaf = i;
       }
     }
+  }
 
+  /**
+   * An abbreviation that uses indices to calculate the left-to-right preorder
+   * id of the leftmost leaf node of the given node.
+   *
+   * @param preL left-to-right preorder id of a node.
+   * @return left-to-right preorder id of the leftmost leaf node of preL.
+   */
+  public int preL_to_lld(int preL) {
+    return postL_to_preL[postL_to_lld[preL_to_postL[preL]]];
+  }
+
+  /**
+   * An abbreviation that uses indices to calculate the left-to-right preorder
+   * id of the rightmost leaf node of the given node.
+   *
+   * @param preL left-to-right preorder id of a node.
+   * @return left-to-right preorder id of the rightmost leaf node of preL.
+   */
+  public int preL_to_rld(int preL) {
+    return postR_to_preL[postR_to_rld[preL_to_postR[preL]]];
+  }
+
+  /**
+   * An abbreviation that uses indices to retrieve pointer to {@link node.Node}
+   * of the given node.
+   *
+   * @param postL left-to-right postorder id of a node.
+   * @return {@link node.Node} corresponding to postL.
+   */
+  public Node<D> postL_to_node(int postL) {
+    return preL_to_node[postL_to_preL[postL]];
+  }
+
+  /**
+   * An abbreviation that uses indices to retrieve pointer to {@link node.Node}
+   * of the given node.
+   *
+   * @param postR right-to-left postorder id of a node.
+   * @return {@link node.Node} corresponding to postR.
+   */
+  public Node<D> postR_to_node(int postR) {
+    return preL_to_node[postR_to_preL[postR]];
   }
 
   /**

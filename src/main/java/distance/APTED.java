@@ -37,7 +37,7 @@ import costmodel.CostModel;
 import costmodel.StringUnitCostModel;
 
 /**
- * Implements APTED algorithm from [2].
+ * Implements APTED algorithm [1,2].
  *
  * <ul>
  * <li>Optimal strategy with all paths.
@@ -79,226 +79,215 @@ public class APTED<C extends CostModel, D> {
    */
   private static final byte INNER = 2;
 
+  /**
+   * Indexer of the source tree.
+   *
+   * @see node.NodeIndexer
+   */
   private NodeIndexer it1;
+
+  /**
+   * Indexer of the destination tree.
+   *
+   * @see node.NodeIndexer
+   */
   private NodeIndexer it2;
 
+  /**
+   * The size of the source input tree.
+   */
   private int size1;
+
+  /**
+   * The size of the destination tree.
+   */
   private int size2;
 
+  /**
+   * The distance matrix [1, Sections 3.4,8.2,8.3]. Used to store intermediate
+   * distances between pairs of subtrees.
+   */
   private float delta[][];
+
+  /**
+   * One of distance arrays to store intermediate distances in spfA.
+   */
+  // TODO: Verify if other spf-local arrays are initialised within spf. If yes,
+  //       move q to spf to.
   private float q[];
 
+  /**
+   * Array used in the algorithm before [1]. Using it does not change the
+   * complexity.
+   */
+  // TODO: Do not use it [1, Section 8.4].
   private int fn[];
+
+  /**
+   * Array used in the algorithm before [1]. Using it does not change the
+   * complexity.
+   */
+  // TODO: Do not use it [1, Section 8.4].
   private int ft[];
 
+  /**
+   * Stores the number of subproblems encountered while computing the distance
+   * [1, Section 10].
+   */
   private long counter;
 
-  // [TODO] USE COST MODEL.
-  private float costDel;
-  private float costIns;
-  private float costMatch;
+  /**
+   * Fixed cost of deleting a node.
+   * @deprecated
+   */
+  // TODO: USE COST MODEL.
+  private float costDel = 1.0f;
+  /**
+   * Fixed cost of inserting a node.
+   * @deprecated
+   */
+  // TODO: USE COST MODEL.
+  private float costIns = 1.0f;
+  /**
+   * Fixed cost of renaming two nodes.
+   * @deprecated
+   */
+  // TODO: USE COST MODEL.
+  private float costMatch = 1.0f;
 
+  /**
+   * Cost model to be used for calculating costs of edit operations.
+   */
   private C costModel;
 
-  // [TODO] get cost model object for edit costs
-
-  public APTED(float delCost, float insCost, float matchCost, C costModel) {
-    // [TODO] USE COST MODEL.
-    counter = 0L;
-    costDel = delCost;
-    costIns = insCost;
-    costMatch = matchCost;
+  /**
+   * Constructs the APTED algorithm object with the specified cost model.
+   *
+   * @param costModel cost model for edit operations.
+   */
+  public APTED(C costModel) {
     this.costModel = costModel;
   }
 
-  public float nonNormalizedTreeDist(Node<D> t1, Node<D> t2) {
-    // PRECOMPUTATION
-    init(t1, t2);
-
-    // STRATEGY COMPUTATION with heuristic described in [2]
-    if (it1.lchl < it1.rchl) {
-    	delta = computeOptStrategyUsingAllPathsOn2_memopt_postL(it1, it2);
-    } else {
-    	delta = computeOptStrategyUsingAllPathsOn2_memopt_postR(it1, it2);
-    }
-
-    // TED COMPUTATION
-    tedInit();
-    float result = computeDistUsingLRHPathsStrArray(it1, it2);
-
-    return result;
-  }
-
-  /*
-   * Compute the edit mapping between two trees. The trees are input trees
-   * to the distance computation and the distance must be computed before
-   * computing the edit mapping (distances of subtree pairs are required).
+  /**
+   * Compute tree edit distance between source and destination trees using
+   * APTED algorithm [1,2].
    *
-   * @return Returns list of pairs of nodes that are mapped as pairs of their
-   *         postorder IDs (starting with 1). Nodes that are deleted or
-   *         inserted are mapped to 0.
+   * @param t1 source tree.
+   * @param t2 destination tree.
+   * @return tree edit distance.
    */
-  // [TODO] Mapping computation requires more thorough documentation
-  //        (methods computeEditMapping, forestDist, mappingCost).
-  // [TODO] Before computing the mapping, verify if TED has been computed.
-  public LinkedList<int[]> computeEditMapping() {
+  public float computeEditDistance(Node<D> t1, Node<D> t2) {
+    // Index the nodes of both input trees.
+    init(t1, t2);
+    // Determine the optimal strategy for the distance computation.
+    // Use the heuristic from [2, Section 5.3].
+    if (it1.lchl < it1.rchl) {
+      delta = computeOptStrategy_postL(it1, it2);
+    } else {
+      delta = computeOptStrategy_postR(it1, it2);
+    }
+    // Initialise structures for distance computation.
+    tedInit();
+    // Compute the distance.
+    return gted(it1, it2);
+  }
 
-    // Initialize tree and forest distance arrays.
-    // Arrays for subtree distrances is not needed because the distances
-    // between subtrees without the root nodes are already stored in delta.
-    float[][] forestdist = new float[size1 + 1][size2 + 1];
-
-    boolean rootNodePair = true;
-
-    // forestdist for input trees has to be computed
-    forestDist(it1, it2, size1, size2, forestdist);
-
-    // empty edit mapping
-    LinkedList<int[]> editMapping = new LinkedList<int[]>();
-
-    // empty stack of tree Pairs
-    LinkedList<int[]> treePairs = new LinkedList<int[]>();
-
-    // push the pair of trees (ted1,ted2) to stack
-    treePairs.push(new int[] { size1, size2 });
-
-    while (!treePairs.isEmpty()) {
-      // get next tree pair to be processed
-      int[] treePair = treePairs.pop();
-      int lastRow = treePair[0];
-      int lastCol = treePair[1];
-
-      // compute forest distance matrix
-      if (!rootNodePair) {
-        forestDist(it1, it2, lastRow, lastCol, forestdist);
-      }
-      rootNodePair = false;
-
-      // compute mapping for current forest distance matrix
-      int firstRow = it1.postL_to_lld[lastRow-1];
-      int firstCol = it2.postL_to_lld[lastCol-1];
-      int row = lastRow;
-      int col = lastCol;
-      while ((row > firstRow) || (col > firstCol)) {
-        if ((row > firstRow) && (forestdist[row - 1][col] + costDel == forestdist[row][col])) {// [TODO] USE COST MODEL.
-          // node with postorderID row is deleted from ted1
-          editMapping.push(new int[] { row, 0 });
-          row--;
-        } else if ((col > firstCol) && (forestdist[row][col - 1] + costIns == forestdist[row][col])) {// [TODO] USE COST MODEL.
-          // node with postorderID col is inserted into ted2
-          editMapping.push(new int[] { 0, col });
-          col--;
-        } else {
-          // node with postorderID row in ted1 is renamed to node col
-          // in ted2
-          if ((it1.postL_to_lld[row-1] == it1.postL_to_lld[lastRow-1]) && (it2.postL_to_lld[col-1] == it2.postL_to_lld[lastCol-1])) {
-            // if both subforests are trees, map nodes
-            editMapping.push(new int[] { row, col });
-            row--;
-            col--;
-          } else {
-            // push subtree pair
-            treePairs.push(new int[] { row, col });
-
-            // continue with forest to the left of the popped
-            // subtree pair
-            row = it1.postL_to_lld[row-1];
-            col = it2.postL_to_lld[col-1];
-          }
+  /**
+   * This method is only for testing purspose. It computes TED with a fixed
+   * path type in the strategy to trigger execution of a specific single-path
+   * function.
+   *
+   * @param t1 source tree.
+   * @param t2 destination tree.
+   * @param spfType single-path function to trigger (LEFT or RIGHT).
+   * @return tree edit distance.
+   */
+  public float computeEditDistance_spfTest(Node<D> t1, Node<D> t2, int spfType) {
+    // Index the nodes of both input trees.
+    init(t1, t2);
+    // Initialise delta array.
+    delta = new float[size1][size2];
+    // Fix a path type to trigger specific spf.
+    for (int i = 0; i < delta.length; i++) {
+      for (int j = 0; j < delta[i].length; j++) {
+        // Fix path type.
+        if (spfType == LEFT) {
+          delta[i][j] = it1.preL_to_lld(i) + 1;
+        } else if (spfType == RIGHT) {
+          delta[i][j] = it1.preL_to_rld(i) + 1;
         }
       }
     }
-    return editMapping;
+    // Initialise structures for distance computation.
+    tedInit();
+    // Compute the distance.
+    return gted(it1, it2);
   }
 
-  // Added by Victor. Pasted straight from RTED.
-  // The rename cost must be added in the last line. Otherwise the formula is
-  // incorrect. This is due to delta storing distances between subtrees
-  // without the root nodes.
-  // i and j are postorder ids of the nodes - starting with 1
-  private void forestDist(NodeIndexer ted1, NodeIndexer ted2, int i, int j, float[][] forestdist) {
-
-    forestdist[ted1.postL_to_lld[i-1]][ted2.postL_to_lld[j-1]] = 0;
-
-    for (int di = ted1.postL_to_lld[i-1]+1; di <= i; di++) {
-      forestdist[di][ted2.postL_to_lld[j-1]] = forestdist[di - 1][ted2.postL_to_lld[j-1]] + costDel;// [TODO] USE COST MODEL.
-      for (int dj = ted2.postL_to_lld[j-1]+1; dj <= j; dj++) {
-        forestdist[ted1.postL_to_lld[i-1]][dj] = forestdist[ted1.postL_to_lld[i-1]][dj - 1] + costIns;// [TODO] USE COST MODEL.
-        float costRen = 0;
-        // [TODO] RENAME COST
-        // if (ted1.labels[ted1.postL_to_preL[di-1]] != ted2.labels[ted2.postL_to_preL[dj-1]]) {
-        //     costRen = costMatch;
-        // }
-        costRen = costModel.ren(ted1.preL_to_node[ted1.postL_to_preL[di-1]], ted2.preL_to_node[ted2.postL_to_preL[dj-1]]);
-        if ((ted1.postL_to_lld[di-1] == ted1.postL_to_lld[i-1]) && (ted2.postL_to_lld[dj-1] == ted2.postL_to_lld[j-1])) {
-          forestdist[di][dj] = Math.min(Math.min(
-                  forestdist[di - 1][dj] + costDel,// [TODO] USE COST MODEL.
-                  forestdist[di][dj - 1] + costIns),// [TODO] USE COST MODEL.
-                  forestdist[di - 1][dj - 1] + costRen);
-          // If substituted with delta, this will overwrite the value
-          // in delta.
-          // It looks that we don't have to write this value.
-          // Conceptually it is correct because we already have all
-          // the values in delta for subtrees without the root nodes,
-          // and we need these.
-          // treedist[di][dj] = forestdist[di][dj];
-        } else {
-          // di and dj are postorder ids of the nodes - starting with 1
-          // Substituted 'treedist[di][dj]' with 'delta[it1.postL_to_preL[di-1]][it2.postL_to_preL[dj-1]]'
-          forestdist[di][dj] = Math.min(Math.min(
-                  forestdist[di - 1][dj] + costDel,// [TODO] USE COST MODEL.
-                  forestdist[di][dj - 1] + costIns),// [TODO] USE COST MODEL.
-                  forestdist[ted1.postL_to_lld[di-1]][ted2.postL_to_lld[dj-1]] + delta[it1.postL_to_preL[di-1]][it2.postL_to_preL[dj-1]] + costRen);
-        }
-      }
-    }
-  }
-
-  public float mappingCost(LinkedList<int[]> mapping) {
-    float cost = 0.0f;
-    for (int i = 0; i < mapping.size(); i++) {
-      if (mapping.get(i)[0] == 0) {
-          cost += costIns;// [TODO] USE COST MODEL.
-      } else if (mapping.get(i)[1] == 0) {
-          cost += costDel;// [TODO] USE COST MODEL.
-      } else {
-        // [TODO] RENAME COST
-        // cost += (it1.getLabels(it1.postL_to_preL[mapping.get(i)[0]-1]) == it2.getLabels(it2.postL_to_preL[mapping.get(i)[1]-1])) ? 0 : costMatch;
-        cost += costModel.ren(it1.preL_to_node[it1.postL_to_preL[mapping.get(i)[0]-1]], it2.preL_to_node[it2.postL_to_preL[mapping.get(i)[1]-1]]);
-      }
-    }
-    return cost;
-  }
-
+  /**
+   * Initialises node indexers and stores input tree sizes.
+   *
+   * @param t1 source input tree.
+   * @param t2 destination input tree.
+   */
   public void init(Node<D> t1, Node<D> t2) {
-    it1 = new NodeIndexer(t1);
-    it2 = new NodeIndexer(t2);
+    it1 = new NodeIndexer(t1, costModel);
+    it2 = new NodeIndexer(t2, costModel);
     size1 = it1.getSize();
     size2 = it2.getSize();
   }
 
+  /**
+   * After the optimal strategy is computed, initialises distances of deleting
+   * and inserting subtrees without their root nodes.
+   */
   private void tedInit() {
+    // Reset the subproblems counter.
     counter = 0L;
-
     // Initialize arrays.
     int maxSize = Math.max(size1, size2) + 1;
+    // TODO: Move q initialisation to spfA.
     q = new float[maxSize];
+    // TODO: Do not use fn and ft arrays [1, Section 8.4].
     fn = new int[maxSize + 1];
     ft = new int[maxSize + 1];
-
-    // Compute subtree distances without the root nodes.
+    // Compute subtree distances without the root nodes when one of subtrees
+    // is a single node.
+    int sizeX = -1;
+    int sizeY = -1;
+    int parentX = -1;
+    int parentY = -1;
+    // Loop over the nodes in reversed left-to-right preorder.
     for(int x = 0; x < size1; x++) {
-        int sizeX = it1.sizes[x];
-        for(int y = 0; y < size2; y++) {
-            int sizeY = it2.sizes[y];
-            if(sizeX == 1 || sizeY == 1) {
-                delta[x][y] = (sizeX - 1) * costDel + (sizeY - 1) * costIns;// [TODO] USE COST MODEL.
-            }
+      sizeX = it1.sizes[x];
+      parentX = it1.parents[x];
+      for(int y = 0; y < size2; y++) {
+        sizeY = it2.sizes[y];
+        parentY = it2.parents[y];
+        // Set values in delta based on the sums of deletion and insertion
+        // costs. Substract the costs for root nodes.
+        if (sizeX == 1 && sizeY == 1) {
+          delta[x][y] = 0.0f;
+        } else if (sizeX == 1) {
+          delta[x][y] = it2.preL_to_sumInsCost[y] - costModel.ins(it2.preL_to_node[y]);
+        } else if (sizeY == 1) {
+          delta[x][y] = it1.preL_to_sumDelCost[x] - costModel.del(it1.preL_to_node[x]);
         }
+      }
     }
   }
 
-  public float[][] computeOptStrategyUsingAllPathsOn2_memopt_postL(NodeIndexer it1, NodeIndexer it2) {
+  /**
+   * Compute the optimal strategy using left-to-right postorder traversal of
+   * the nodes [2, Algorithm 1].
+   *
+   * @param it1 node indexer of the source input tree.
+   * @param it2 node indexer of the destination input tree.
+   * @return array with the optimal strategy.
+   */
+  // TODO: Document the internals. Point to lines of the lagorithm.
+  public float[][] computeOptStrategy_postL(NodeIndexer it1, NodeIndexer it2) {
 
     int size1 = it1.getSize();
     int size2 = it2.getSize();
@@ -421,7 +410,7 @@ public class APTED<C extends CostModel, D> {
         }
 
         size_w = pre2size2[w_in_preL];
-        if(it2.isLeaf(w_in_preL)) {
+        if (it2.isLeaf(w_in_preL)) {
           cost2_L[w] = 0L;
           cost2_R[w] = 0L;
           cost2_I[w] = 0L;
@@ -435,66 +424,66 @@ public class APTED<C extends CostModel, D> {
           minCost = Math.max(size_v, size_w);
         } else {
           tmpCost = (float) size_v * (float) pre2krSum2[w_in_preL] + cost_Lpointer_v[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = leftPath_v;
           }
           tmpCost = (float) size_v * (float) pre2revkrSum2[w_in_preL] + cost_Rpointer_v[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = rightPath_v;
           }
           tmpCost = (float) size_v * (float) pre2descSum2[w_in_preL] + cost_Ipointer_v[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = (int)strategypointer_v[w_in_preL] + 1;
           }
           tmpCost = (float) size_w * (float) krSum_v + cost2_L[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = -(preR_to_preL_2[preL_to_preR_2[w_in_preL] + size_w - 1] + pathIDOffset + 1);
           }
           tmpCost = (float) size_w * (float) revkrSum_v + cost2_R[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = w_in_preL + size_w - 1 + pathIDOffset + 1;
           }
           tmpCost = (float) size_w * (float) descSum_v + cost2_I[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = cost2_path[w] + pathIDOffset + 1;
           }
         }
 
-        if(parent_v_preL != -1) {
+        if (parent_v_preL != -1) {
           cost_Rpointer_parent_v[w] += minCost;
           tmpCost = -minCost + cost1_I[v][w];
-          if(tmpCost < cost1_I[parent_v_postL][w]) {
+          if (tmpCost < cost1_I[parent_v_postL][w]) {
             cost_Ipointer_parent_v[w] = tmpCost;
             strategypointer_parent_v[w_in_preL] = strategypointer_v[w_in_preL];
           }
-          if(nodeType_R_1[v_in_preL]) {
+          if (nodeType_R_1[v_in_preL]) {
             cost_Ipointer_parent_v[w] += cost_Rpointer_parent_v[w];
             cost_Rpointer_parent_v[w] += cost_Rpointer_v[w] - minCost;
           }
-          if(nodeType_L_1[v_in_preL]) {
+          if (nodeType_L_1[v_in_preL]) {
             cost_Lpointer_parent_v[w] += cost_Lpointer_v[w];
           } else {
             cost_Lpointer_parent_v[w] += minCost;
           }
         }
-        if(parent_w_preL != -1) {
+        if (parent_w_preL != -1) {
           cost2_R[parent_w_postL] += minCost;
           tmpCost = -minCost + cost2_I[w];
-          if(tmpCost < cost2_I[parent_w_postL]) {
+          if (tmpCost < cost2_I[parent_w_postL]) {
             cost2_I[parent_w_postL] = tmpCost;
             cost2_path[parent_w_postL] = cost2_path[w];
           }
-          if(nodeType_R_2[w_in_preL]) {
+          if (nodeType_R_2[w_in_preL]) {
             cost2_I[parent_w_postL] += cost2_R[parent_w_postL];
             cost2_R[parent_w_postL] += cost2_R[w] - minCost;
           }
-          if(nodeType_L_2[w_in_preL]) {
+          if (nodeType_L_2[w_in_preL]) {
             cost2_L[parent_w_postL] += cost2_L[w];
           } else {
             cost2_L[parent_w_postL] += minCost;
@@ -503,7 +492,7 @@ public class APTED<C extends CostModel, D> {
         strategypointer_v[w_in_preL] = strategyPath;
       }
 
-      if(!it1.isLeaf(v_in_preL)) {
+      if (!it1.isLeaf(v_in_preL)) {
         Arrays.fill(cost1_L[v], 0);
         Arrays.fill(cost1_R[v], 0);
         Arrays.fill(cost1_I[v], 0);
@@ -516,7 +505,17 @@ public class APTED<C extends CostModel, D> {
     return strategy;
   }
 
-  public float[][] computeOptStrategyUsingAllPathsOn2_memopt_postR(NodeIndexer it1, NodeIndexer it2) {
+  /**
+   * Compute the optimal strategy using right-to-left postorder traversal of
+   * the nodes [2, Algorithm 1].
+   *
+   * @param it1 node indexer of the source input tree.
+   * @param it2 node indexer of the destination input tree.
+   * @return array with the optimal strategy.
+   */
+  // QUESTION: Is it possible to merge it with the other strategy computation?
+  // TODO: Document the internals. Point to lines of the lagorithm.
+  public float[][] computeOptStrategy_postR(NodeIndexer it1, NodeIndexer it2) {
     int size1 = it1.getSize();
     int size2 = it2.getSize();
     float strategy[][] = new float[size1][size2];
@@ -577,11 +576,11 @@ public class APTED<C extends CostModel, D> {
       revkrSum_v = pre2revkrSum1[v];
       descSum_v = pre2descSum1[v];
 
-      if(is_v_leaf) {
+      if (is_v_leaf) {
         cost1_L[v] = leafRow;
         cost1_R[v] = leafRow;
         cost1_I[v] = leafRow;
-        for(int i = 0; i < size2; i++) {
+        for (int i = 0; i < size2; i++) {
           strategypointer_v[i] = v;
         }
       }
@@ -590,7 +589,7 @@ public class APTED<C extends CostModel, D> {
       cost_Rpointer_v = cost1_R[v];
       cost_Ipointer_v = cost1_I[v];
 
-      if(parent_v != -1 && cost1_L[parent_v] == null) {
+      if (parent_v != -1 && cost1_L[parent_v] == null) {
         if (rowsToReuse_L.isEmpty()) {
           cost1_L[parent_v] = new float[size2];
           cost1_R[parent_v] = new float[size2];
@@ -613,9 +612,9 @@ public class APTED<C extends CostModel, D> {
       Arrays.fill(cost2_R, 0L);
       Arrays.fill(cost2_I, 0L);
       Arrays.fill(cost2_path, 0);
-      for(int w = size2 - 1; w >= 0; w--) {
+      for (int w = size2 - 1; w >= 0; w--) {
         size_w = pre2size2[w];
-        if(it2.isLeaf(w)) {
+        if (it2.isLeaf(w)) {
           cost2_L[w] = 0L;
           cost2_R[w] = 0L;
           cost2_I[w] = 0L;
@@ -629,67 +628,67 @@ public class APTED<C extends CostModel, D> {
         	minCost = Math.max(size_v, size_w);
         } else {
           tmpCost = (float) size_v * (float) pre2krSum2[w] + cost_Lpointer_v[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = leftPath_v;
           }
           tmpCost = (float) size_v * (float) pre2revkrSum2[w] + cost_Rpointer_v[w];
-          if(tmpCost < minCost){
+          if (tmpCost < minCost){
             minCost = tmpCost;
             strategyPath = rightPath_v;
           }
           tmpCost = (float) size_v * (float) pre2descSum2[w] + cost_Ipointer_v[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = (int)strategypointer_v[w] + 1;
           }
           tmpCost = (float) size_w * (float) krSum_v + cost2_L[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = -(preR_to_preL_2[preL_to_preR_2[w] + size_w - 1] + pathIDOffset + 1);
           }
           tmpCost = (float) size_w * (float) revkrSum_v + cost2_R[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = w + size_w - 1 + pathIDOffset + 1;
           }
           tmpCost = (float) size_w * (float) descSum_v + cost2_I[w];
-          if(tmpCost < minCost) {
+          if (tmpCost < minCost) {
             minCost = tmpCost;
             strategyPath = cost2_path[w] + pathIDOffset + 1;
           }
         }
 
-        if(parent_v != -1) {
+        if (parent_v != -1) {
           cost_Lpointer_parent_v[w] += minCost;
           tmpCost = -minCost + cost1_I[v][w];
-          if(tmpCost < cost1_I[parent_v][w]) {
+          if (tmpCost < cost1_I[parent_v][w]) {
             cost_Ipointer_parent_v[w] = tmpCost;
             strategypointer_parent_v[w] = strategypointer_v[w];
           }
-          if(nodeType_L_1[v]) {
+          if (nodeType_L_1[v]) {
             cost_Ipointer_parent_v[w] += cost_Lpointer_parent_v[w];
             cost_Lpointer_parent_v[w] += cost_Lpointer_v[w] - minCost;
           }
-          if(nodeType_R_1[v]) {
+          if (nodeType_R_1[v]) {
               cost_Rpointer_parent_v[w] += cost_Rpointer_v[w];
           } else {
             cost_Rpointer_parent_v[w] += minCost;
           }
         }
         parent_w = pre2parent2[w];
-        if(parent_w != -1) {
+        if (parent_w != -1) {
           cost2_L[parent_w] += minCost;
           tmpCost = -minCost + cost2_I[w];
-          if(tmpCost < cost2_I[parent_w]) {
+          if (tmpCost < cost2_I[parent_w]) {
             cost2_I[parent_w] = tmpCost;
             cost2_path[parent_w] = cost2_path[w];
           }
-          if(nodeType_L_2[w]) {
+          if (nodeType_L_2[w]) {
             cost2_I[parent_w] += cost2_L[parent_w];
             cost2_L[parent_w] += cost2_L[w] - minCost;
           }
-          if(nodeType_R_2[w]) {
+          if (nodeType_R_2[w]) {
               cost2_R[parent_w] += cost2_R[w];
           } else {
             cost2_R[parent_w] += minCost;
@@ -698,7 +697,7 @@ public class APTED<C extends CostModel, D> {
         strategypointer_v[w] = strategyPath;
       }
 
-      if(!it1.isLeaf(v)) {
+      if (!it1.isLeaf(v)) {
         Arrays.fill(cost1_L[v], 0);
         Arrays.fill(cost1_R[v], 0);
         Arrays.fill(cost1_I[v], 0);
@@ -710,15 +709,23 @@ public class APTED<C extends CostModel, D> {
       return strategy;
   }
 
-  private float computeDistUsingLRHPathsStrArray(NodeIndexer it1, NodeIndexer it2) {
+  /**
+   * Implements GTED algorithm [1, Section 3.4].
+   *
+   * @param it1 node indexer for the source input tree.
+   * @param it2 node indexer for the destination input tree.
+   * @return the tree edit distance between the source and destination trees.
+   */
+  // TODO: Document the internals. Point to lines of the algorithm.
+  private float gted(NodeIndexer it1, NodeIndexer it2) {
     int currentSubtree1 = it1.getCurrentNode();
     int currentSubtree2 = it2.getCurrentNode();
     int subtreeSize1 = it1.sizes[currentSubtree1];
     int subtreeSize2 = it2.sizes[currentSubtree2];
 
     // SINGLE-NODE SUBTREE
-    // [TODO]: modify to custom costs
-    //         currently unit cost only
+    // TODO: USE COST MODEL.
+    // TODO: Currently suited for unit cost only.
     if ((subtreeSize1 == 1 || subtreeSize2 == 1)) {
       float result = Math.max(it1.sizes[currentSubtree1], it2.sizes[currentSubtree2]);
       boolean matchFound = false;
@@ -726,14 +733,7 @@ public class APTED<C extends CostModel, D> {
       for (int i = currentSubtree1; i < currentSubtree1 + it1.sizes[currentSubtree1]; i++) {
         for (int j = currentSubtree2; j < currentSubtree2 + it2.sizes[currentSubtree2]; j++) {
           if (!matchFound) {
-            // [TODO] IF LABELS MATCH
-            // matchFound = it1.labels[i] == it2.labels[j];
             matchFound = costModel.ren(it1.preL_to_node[i], it2.preL_to_node[j]) == 0.0;
-            // String log = ((StringNodeData)it1.preL_to_node[i].getNodeData()).getLabel() +
-            //     ":" + ((StringNodeData)it2.preL_to_node[j].getNodeData()).getLabel() + "\n" +
-            //     matchFound + "\n" +
-            //     costModel.ren(it1.preL_to_node[i], it2.preL_to_node[j]) + "\n";
-            // System.out.println(log);
           }
           counter++;
         }
@@ -758,7 +758,7 @@ public class APTED<C extends CostModel, D> {
           int child = ai[i];
           if(child != currentPathNode) {
             it1.setCurrentNode(child);
-            computeDistUsingLRHPathsStrArray(it1, it2);
+            gted(it1, it2);
           }
         }
         currentPathNode = parent;
@@ -773,7 +773,7 @@ public class APTED<C extends CostModel, D> {
       if (strategyPathType == 1) {
         return spfR(it1, it2);
       }
-      return spfWithPathID_opt_mem(it1, it2, Math.abs(strategyPathID) - 1, strategyPathType);
+      return spfA(it1, it2, Math.abs(strategyPathID) - 1, strategyPathType);
     }
 
     currentPathNode -= pathIDOffset;
@@ -785,7 +785,7 @@ public class APTED<C extends CostModel, D> {
         int child = ai1[j];
         if(child != currentPathNode) {
           it2.setCurrentNode(child);
-          computeDistUsingLRHPathsStrArray(it1, it2);
+          gted(it1, it2);
         }
       }
       currentPathNode = parent;
@@ -800,21 +800,26 @@ public class APTED<C extends CostModel, D> {
     if (strategyPathType == 1) {
       return spfR(it2, it1);
     }
-    return spfWithPathID_opt_mem(it2, it1, Math.abs(strategyPathID) - pathIDOffset - 1, strategyPathType);
+    return spfA(it2, it1, Math.abs(strategyPathID) - pathIDOffset - 1, strategyPathType);
   }
 
-
-  // [TODO] Verify using ren, del, ins costs.
-  private float spfWithPathID_opt_mem(NodeIndexer it1, NodeIndexer it2, int pathID, byte pathType) {
+  /**
+   * Implements the single-path function spfA. Here, we use it strictly for
+   * inner paths (spfL and spfR have better performance for leaft and right
+   * paths, respectively) [1, Sections 7 and 8]. However, in this stage it
+   * also executes correctly for left and right paths.
+   *
+   * @param it1 node indexer of the left-hand input subtree.
+   * @param it2 node indexer of the right-hand input subtree.
+   * @param pathID the left-to-right preorder id of the strategy path's leaf node.
+   * @param pathType type of the strategy path (LEFT, RIGHT, INNER).
+   * @return tree edit distance between left-hand and right-hand input subtrees.
+   */
+  // TODO: Document the internals. Point to lines of the algorithm.
+  private float spfA(NodeIndexer it1, NodeIndexer it2, int pathID, byte pathType) {
     boolean treesSwitched = it1.isSwitched();
-
-    // [TODO] Nodes instead of labels should be used.
-    // int[] it2labels = it2.labels;
     Node<D>[] it2nodes = it2.preL_to_node;
-
-    // [TODO] Pointer to node.
     Node<D> lFNode;
-
     int[] it1sizes = it1.sizes;
     int[] it2sizes = it2.sizes;
     int[] it1parents = it1.parents;
@@ -823,19 +828,15 @@ public class APTED<C extends CostModel, D> {
     int[] it2preL_to_preR = it2.preL_to_preR;
     int[] it1preR_to_preL = it1.preR_to_preL;
     int[] it2preR_to_preL = it2.preR_to_preL;
-
     int currentSubtreePreL1 = it1.getCurrentNode();
     int currentSubtreePreL2 = it2.getCurrentNode();
-
     int currentForestSize1 = 0;
     int currentForestSize2 = 0;
     int tmpForestSize1 = 0;
     int subtreeSize2 = it2.sizes[currentSubtreePreL2];
     int subtreeSize1 = it1.sizes[currentSubtreePreL1];
-
     float[][] t = new float[subtreeSize2+1][subtreeSize2+1];
     float[][] s = new float[subtreeSize1+1][subtreeSize2+1];
-
     float minCost = -1;
     float sp1 = 0;
     float sp2 = 0;
@@ -846,7 +847,6 @@ public class APTED<C extends CostModel, D> {
     int it2PreLoff = currentSubtreePreL2;
     int it1PreRoff = it1preL_to_preR[endPathNode];
     int it2PreRoff = it2preL_to_preR[it2PreLoff];
-
     // variable declarations which were inside the loops
     int rFlast,lFlast,endPathNode_in_preR,startPathNode_in_preR,parent_of_endPathNode,parent_of_endPathNode_in_preR,
     lFfirst,rFfirst,rGlast,rGfirst,lGfirst,rG_in_preL,rGminus1_in_preL,parent_of_rG_in_preL,lGlast,lF_in_preR,lFSubtreeSize,
@@ -856,19 +856,15 @@ public class APTED<C extends CostModel, D> {
     rFIsConsecutiveNodeOfCurrentPathNode,rFIsRightSiblingOfCurrentPathNode;
     float[] sp1spointer,sp2spointer,sp3spointer,sp3deltapointer,swritepointer,sp1tpointer,sp3tpointer;
     byte sp1source,sp3source;
-
     for (; endPathNode >= currentSubtreePreL1; endPathNode = it1parents[endPathNode]) {
       it1PreLoff = endPathNode;
       it1PreRoff = it1preL_to_preR[endPathNode];
-
       rFlast = -1;
       lFlast = -1;
       endPathNode_in_preR = it1preL_to_preR[endPathNode];
       startPathNode_in_preR = startPathNode == -1 ? 0x7fffffff : it1preL_to_preR[startPathNode];
       parent_of_endPathNode = it1parents[endPathNode];
       parent_of_endPathNode_in_preR = parent_of_endPathNode == -1 ? 0x7fffffff : it1preL_to_preR[parent_of_endPathNode];
-
-
       if (startPathNode - endPathNode > 1) {
         leftPart = true;
       } else {
@@ -898,7 +894,6 @@ public class APTED<C extends CostModel, D> {
             fn[i] = -1;
             ft[i] = -1;
         }
-
         tmpForestSize1 = currentForestSize1;
         for (int rG = rGfirst; rG >= rGlast; rG--) {
           lGfirst = it2preR_to_preL[rG];
@@ -918,7 +913,6 @@ public class APTED<C extends CostModel, D> {
           updateFtArray(it2.preL_to_ln[lGfirst], lGfirst);
           int rF = rFfirst;
           currentForestSize1 = tmpForestSize1;
-
           for (int lF = lFfirst; lF >= lFlast; lF--) {
             if (lF == lFlast && !rightPart) {
               rF = rFlast;
@@ -928,20 +922,14 @@ public class APTED<C extends CostModel, D> {
             lF_in_preR = it1preL_to_preR[lF];
             fForestIsTree = lF_in_preR == rF;
             lFSubtreeSize = it1sizes[lF];
-
-            // [TODO] Pointer to a node.
-            // lFLabel = it1.getLabels(lF);
             lFNode = it1.preL_to_node[lF];
-
             lFIsConsecutiveNodeOfCurrentPathNode = startPathNode - lF == 1;
             lFIsLeftSiblingOfCurrentPathNode = lF + lFSubtreeSize == startPathNode;
-
             sp1spointer = s[(lF + 1) - it1PreLoff];
             sp2spointer = s[lF - it1PreLoff];
             sp3spointer = s[0];
             sp3deltapointer = treesSwitched ? null : delta[lF];
             swritepointer = s[lF - it1PreLoff];
-
             sp1source = 1;
             sp3source = 1;
             if (fForestIsTree) {
@@ -956,80 +944,64 @@ public class APTED<C extends CostModel, D> {
               if (lFIsConsecutiveNodeOfCurrentPathNode) {
                 sp1source = 2;
               }
-              sp3 = currentForestSize1 - lFSubtreeSize * costDel;// [TODO] USE COST MODEL.
+              sp3 = currentForestSize1 - lFSubtreeSize * costDel;// TODO: USE COST MODEL - subforest cost.
               if (lFIsLeftSiblingOfCurrentPathNode) {
                 sp3source = 3;
               }
             }
-
             if (sp3source == 1) {
               sp3spointer = s[(lF + lFSubtreeSize) - it1PreLoff];
             }
-
             if (currentForestSize2 + 1 == 1) {
-              sp2 = currentForestSize1 * costDel;// [TODO] USE COST MODEL.
+              sp2 = currentForestSize1 * costDel;// TODO: USE COST MODEL - subforest cost.
             } else {
               sp2 = q[lF];
             }
             int lG = lGfirst;
             currentForestSize2++;
-
             switch(sp1source) {
               case 1: sp1 = sp1spointer[lG - it2PreLoff]; break;
               case 2: sp1 = t[lG - it2PreLoff][rG - it2PreRoff]; break;
-              case 3: sp1 = currentForestSize2 * costIns; break;// [TODO] USE COST MODEL.
+              case 3: sp1 = currentForestSize2 * costIns; break;// TODO: USE COST MODEL - subforest cost.
             }
-            sp1 += costDel;// [TODO] USE COST MODEL.
+            sp1 += costDel;// TODO: USE COST MODEL.
             minCost = sp1;
-            sp2 += costIns;// [TODO] USE COST MODEL.
+            sp2 += costIns;// TODO: USE COST MODEL.
             if (sp2 < minCost) {
               minCost = sp2;
             }
-
             if (sp3 < minCost) {
               sp3 += treesSwitched ? delta[lG][lF] : sp3deltapointer[lG];
               if (sp3 < minCost) {
-                // [TODO] RENAME COST
-                // if (lFLabel != it2labels[lG]) {
-                //   sp3 += costMatch;
-                // }
                 sp3 += costModel.ren(lFNode, it2nodes[lG]);
                 if(sp3 < minCost) {
                   minCost = sp3;
                 }
               }
             }
-
             swritepointer[lG - it2PreLoff] = minCost;
             lG = ft[lG];
             counter++;
-
             while (lG >= lGlast) {
               currentForestSize2++;
               switch(sp1source) {
-                case 1: sp1 = sp1spointer[lG - it2PreLoff] + costDel; break;// [TODO] USE COST MODEL.
-                case 2: sp1 = t[lG - it2PreLoff][rG - it2PreRoff] + costDel; break;// [TODO] USE COST MODEL.
-                case 3: sp1 = currentForestSize2 * costIns + costDel; break;// [TODO] USE COST MODEL.
+                case 1: sp1 = sp1spointer[lG - it2PreLoff] + costDel; break;// TODO: USE COST MODEL.
+                case 2: sp1 = t[lG - it2PreLoff][rG - it2PreRoff] + costDel; break;// TODO: USE COST MODEL.
+                case 3: sp1 = currentForestSize2 * costIns + costDel; break;// TODO: USE COST MODEL.
               }
-              sp2 = sp2spointer[fn[lG] - it2PreLoff] + costDel;// [TODO] USE COST MODEL.
-
+              sp2 = sp2spointer[fn[lG] - it2PreLoff] + costDel;// TODO: USE COST MODEL.
               minCost = sp1;
               if(sp2 < minCost) {
                 minCost = sp2;
               }
-
               sp3 = treesSwitched ? delta[lG][lF] : sp3deltapointer[lG];
               if (sp3 < minCost) {
                 switch(sp3source) {
                     case 1: sp3 += sp3spointer[fn[(lG + it2sizes[lG]) - 1] - it2PreLoff]; break;
-                    case 2: sp3 += (currentForestSize2 - it2sizes[lG]) * costIns; break;// [TODO] USE COST MODEL.
+                    case 2: sp3 += (currentForestSize2 - it2sizes[lG]) * costIns; break;// TODO: USE COST MODEL - subforest cost.
                     case 3: sp3 += t[fn[(lG + it2sizes[lG]) - 1] - it2PreLoff][rG - it2PreRoff]; break;
                 }
                 if (sp3 < minCost) {
-                  // [TODO] RENAME COST
-                  // if (lFLabel != it2labels[lG]) {
-                  //   sp3 += costMatch;
-                  // }
                   sp3 += costModel.ren(lFNode, it2nodes[lG]);
                   if (sp3 < minCost) {
                     minCost = sp3;
@@ -1041,7 +1013,6 @@ public class APTED<C extends CostModel, D> {
               counter++;
             }
           }
-
           if (rGminus1_in_preL == parent_of_rG_in_preL) {
             if (!rightPart) {
               if (leftPart) {
@@ -1086,7 +1057,6 @@ public class APTED<C extends CostModel, D> {
           fn[i] = -1;
           ft[i] = -1;
         }
-
         tmpForestSize1 = currentForestSize1;
         for (int lG = lGfirst; lG >= lGlast; lG--) {
           rGfirst = it2preL_to_preR[lG];
@@ -1108,7 +1078,6 @@ public class APTED<C extends CostModel, D> {
           } else {
             rGlast = rGfirst == it2preL_to_preR[currentSubtreePreL2] ? rGfirst : it2preL_to_preR[currentSubtreePreL2];
           }
-
           for (int rF = rFfirst; rF >= rFlast; rF--) {
             if (rF == rFlast) {
               lF = lFlast;
@@ -1125,11 +1094,7 @@ public class APTED<C extends CostModel, D> {
               rFIsRightSiblingOfCurrentPathNode = false;
             }
             fForestIsTree = rF_in_preL == lF;
-
-            // [TODO] Node instead of label.
-            // int rFLabel = it1.getLabels(rF_in_preL);
             Node<D> rFNode = it1.preL_to_node[rF_in_preL];
-
             sp1spointer = s[(rF + 1) - it1PreRoff];
             sp2spointer = s[rF - it1PreRoff];
             sp3spointer = s[0];
@@ -1137,7 +1102,6 @@ public class APTED<C extends CostModel, D> {
             swritepointer = s[rF - it1PreRoff];
             sp1tpointer = t[lG - it2PreLoff];
             sp3tpointer = t[lG - it2PreLoff];
-
             sp1source = 1;
             sp3source = 1;
             if (fForestIsTree) {
@@ -1152,98 +1116,77 @@ public class APTED<C extends CostModel, D> {
               if (rFIsConsecutiveNodeOfCurrentPathNode) {
                 sp1source = 2;
               }
-              sp3 = currentForestSize1 - rFSubtreeSize * costDel;// [TODO] USE COST MODEL.
+              sp3 = currentForestSize1 - rFSubtreeSize * costDel;// TODO: USE COST MODEL - subforest cost.
               if (rFIsRightSiblingOfCurrentPathNode) {
                 sp3source = 3;
               }
             }
-
             if (sp3source == 1) {
               sp3spointer = s[(rF + rFSubtreeSize) - it1PreRoff];
             }
-
             if (currentForestSize2 + 1 == 1) {
-              sp2 = currentForestSize1 * costDel;// [TODO] USE COST MODEL.
+              sp2 = currentForestSize1 * costDel;// TODO: USE COST MODEL - subforest cost.
             } else {
               sp2 = q[rF];
             }
-
             int rG = rGfirst;
             rGfirst_in_preL = it2preR_to_preL[rGfirst];
-
             currentForestSize2++;
-
             switch (sp1source) {
               case 1: sp1 = sp1spointer[rG - it2PreRoff]; break;
               case 2: sp1 = sp1tpointer[rG - it2PreRoff]; break;
-              case 3: sp1 = currentForestSize2 * costIns; break;// [TODO] USE COST MODEL.
+              case 3: sp1 = currentForestSize2 * costIns; break;// TODO: USE COST MODEL - subforest cost.
             }
-            sp1 += costDel;// [TODO] USE COST MODEL.
+            sp1 += costDel;// TODO: USE COST MODEL.
             minCost = sp1;
-            sp2 += costIns;// [TODO] USE COST MODEL.
+            sp2 += costIns;// TODO: USE COST MODEL.
             if (sp2 < minCost) {
               minCost = sp2;
             }
-
             if (sp3 < minCost) {
               sp3 += treesSwitched ? delta[rGfirst_in_preL][rF_in_preL] : sp3deltapointer[rGfirst_in_preL];
               if (sp3 < minCost) {
-                // [TODO] RENAME COST
-                // if (rFLabel != it2labels[rGfirst_in_preL]) {
-                //   sp3 += costMatch;
-                // }
                 sp3 += costModel.ren(rFNode, it2nodes[rGfirst_in_preL]);
                 if (sp3 < minCost) {
                   minCost = sp3;
                 }
               }
             }
-
             swritepointer[rG - it2PreRoff] = minCost;
             rG = ft[rG];
             counter++;
-
             while (rG >= rGlast) {
               currentForestSize2++;
               rG_in_preL = it2preR_to_preL[rG];
               switch (sp1source) {
-                case 1: sp1 = sp1spointer[rG - it2PreRoff] + costDel; break;// [TODO] USE COST MODEL.
-                case 2: sp1 = sp1tpointer[rG - it2PreRoff] + costDel; break;// [TODO] USE COST MODEL.
-                case 3: sp1 = currentForestSize2 * costIns + costDel; break;// [TODO] USE COST MODEL.
+                case 1: sp1 = sp1spointer[rG - it2PreRoff] + costDel; break;// TODO: USE COST MODEL.
+                case 2: sp1 = sp1tpointer[rG - it2PreRoff] + costDel; break;// TODO: USE COST MODEL.
+                case 3: sp1 = currentForestSize2 * costIns + costDel; break;// TODO: USE COST MODEL.
               }
-              sp2 = sp2spointer[fn[rG] - it2PreRoff] + costIns;// [TODO] USE COST MODEL.
-
+              sp2 = sp2spointer[fn[rG] - it2PreRoff] + costIns;// TODO: USE COST MODEL.
               minCost = sp1;
               if (sp2 < minCost) {
                 minCost = sp2;
               }
-
               sp3 = treesSwitched ? delta[rG_in_preL][rF_in_preL] : sp3deltapointer[rG_in_preL];
               if (sp3 < minCost) {
                 switch (sp3source) {
                   case 1: sp3 += sp3spointer[fn[(rG + it2sizes[rG_in_preL]) - 1] - it2PreRoff]; break;
-                  case 2: sp3 += (currentForestSize2 - it2sizes[rG_in_preL]) * costIns; break;// [TODO] USE COST MODEL.
+                  case 2: sp3 += (currentForestSize2 - it2sizes[rG_in_preL]) * costIns; break;// TODO: USE COST MODEL - subforest cost.
                   case 3: sp3 += sp3tpointer[fn[(rG + it2sizes[rG_in_preL]) - 1] - it2PreRoff]; break;
                 }
-
                 if (sp3 < minCost) {
-                  // [TODO] RENAME COST
-                  // if (rFLabel != it2labels[rG_in_preL]) {
-                  //   sp3 += costMatch;
-                  // }
                   sp3 += costModel.ren(rFNode, it2nodes[rG_in_preL]);
                   if (sp3 < minCost) {
                     minCost = sp3;
                   }
                 }
               }
-
               swritepointer[rG - it2PreRoff] = minCost;
               rG = ft[rG];
               counter++;
             }
           }
-
           if (lG > currentSubtreePreL2 && lG - 1 == parent_of_lG) {
             if (rightPart) {
               if (treesSwitched) {
@@ -1274,188 +1217,288 @@ public class APTED<C extends CostModel, D> {
   }
 
   // ===================== BEGIN spfL
+  /**
+   * Implements single-path function for left paths [1, Sections 3.3,3.4,3.5].
+   * The parameters represent input subtrees for the single-path function.
+   * The order of the parameters is important. We use this single-path function
+   * due to better performance compared to spfA.
+   *
+   * @param it1 node indexer of the left-hand input subtree.
+   * @param it2 node indexer of the right-hand input subtree.
+   * @return tree edit distance between left-hand and right-hand input subtrees.
+   */
   private float spfL(NodeIndexer it1, NodeIndexer it2) {
-
+    // Initialise the array to store the keyroot nodes in the right-hand input
+    // subtree.
     int[] keyRoots = new int[it2.sizes[it2.getCurrentNode()]];
-
     Arrays.fill(keyRoots, -1);
-
-    int pathID = it2.preR_to_preL[it2.preL_to_preR[it2.getCurrentNode()] + it2.sizes[it2.getCurrentNode()] - 1];
+    // Get the leftmost leaf node of the right-hand input subtree.
+    int pathID = it2.preL_to_lld(it2.getCurrentNode());
+    // Calculate the keyroot nodes in the right-hand input subtree.
+    // firstKeyRoot is the index in keyRoots of the first keyroot node that
+    // we have to process. We need this index because keyRoots array is larger
+    // than the number of keyroot nodes.
     int firstKeyRoot = computeKeyRoots(it2, it2.getCurrentNode(), pathID, keyRoots, 0);
-
+    // Initialise an array to store intermediate distances for subforest pairs.
     float[][] forestdist = new float[it1.sizes[it1.getCurrentNode()]+1][it2.sizes[it2.getCurrentNode()]+1];
-
+    // Compute the distances between pairs of keyroot nodes. In the left-hand
+    // input subtree only the root is the keyroot. Thus, we compute the distance
+    // between the left-hand input subtree and all keyroot nodes in the
+    // right-hand input subtree.
     for (int i = firstKeyRoot-1; i >= 0; i--) {
       treeEditDist(it1, it2, it1.getCurrentNode(), keyRoots[i], forestdist);
     }
-
+    // Return the distance between the input subtrees.
     return forestdist[it1.sizes[it1.getCurrentNode()]][it2.sizes[it2.getCurrentNode()]];
   }
 
+  /**
+   * Calculates and stores keyroot nodes for left paths of the given subtree
+   * recursively.
+   *
+   * @param it2 node indexer.
+   * @param subtreeRootNode keyroot node - recursion point.
+   * @param pathID left-to-right preorder id of the leftmost leaf node of subtreeRootNode.
+   * @param keyRoots array that stores all key roots in the order of their left-to-right preorder ids.
+   * @param index the index of keyRoots array where to store the next keyroot node.
+   */
+  // TODO: Merge with computeRevKeyRoots - the only difference is between leftmost and rightmost leaf.
   private int computeKeyRoots(NodeIndexer it2, int subtreeRootNode, int pathID, int[] keyRoots, int index) {
-
+    // The subtreeRootNode is a keyroot node. Add it to keyRoots.
     keyRoots[index] = subtreeRootNode;
+    // Increment the index to know where to store the next keyroot node.
     index++;
-
+    // Walk up the left path starting with the leftmost leaf of subtreeRootNode,
+    // until the child of subtreeRootNode.
     int pathNode = pathID;
     while (pathNode > subtreeRootNode) {
       int parent = it2.parents[pathNode];
+      // For each sibling to the right of pathNode, execute this method recursively.
+      // Each right sibling of pathNode is a keyroot node.
       for (int child : it2.children[parent]) {
-        if (child != pathNode) index = computeKeyRoots(it2, child, it2.preR_to_preL[it2.preL_to_preR[child]+it2.sizes[child]-1], keyRoots, index);
+        // Execute computeKeyRoots recursively for the new subtree rooted at child and child's leftmost leaf node.
+        if (child != pathNode) index = computeKeyRoots(it2, child, it2.preL_to_lld(child), keyRoots, index);
       }
+      // Walk up.
       pathNode = parent;
     }
-
     return index;
   }
 
-  // [TODO] Substitute with postL_to_lld index of InfoTree.
-  private int getLLD(NodeIndexer it, int postorder) {
-    int preL = it.postL_to_preL[postorder];
-    return it.preL_to_postL[it.preR_to_preL[it.preL_to_preR[preL] + it.sizes[preL] - 1]];
-  }
-
+  /**
+   * Implements the core of spfL. Fills in forestdist array with intermediate
+   * distances of subforest pairs in dynamic-programming fashion.
+   *
+   * @param it1 node indexer of the left-hand input subtree.
+   * @param it2 node indexer of the right-hand input subtree.
+   * @param it1subtree left-to-right preorder id of the root node of the left-hand input subtree.
+   * @param it2subtree left-to-right preorder id of the root node of the right-hand input subtree.
+   * @param forestdist the array to be filled in with intermediate distances of subforest pairs.
+   */
   private void treeEditDist(NodeIndexer it1, NodeIndexer it2, int it1subtree, int it2subtree, float[][] forestdist) {
-
-    // i,j have to be in postorder
+    // Translate input subtree root nodes to left-to-right postorder.
     int i = it1.preL_to_postL[it1subtree];
     int j = it2.preL_to_postL[it2subtree];
-
-    int ioff = getLLD(it1, i) - 1;
-    int joff = getLLD(it2, j) - 1;
+    // We need to offset the node ids for accessing forestdist array which has
+    // indices from 0 to subtree size. However, the subtree node indices do not
+    // necessarily start with 0.
+    // Whenever the original left-to-right postorder id has to be accessed, use
+    // i+ioff and j+joff.
+    int ioff = it1.postL_to_lld[i] - 1;
+    int joff = it2.postL_to_lld[j] - 1;
+    // Variables holding costs of each minimum element.
     float da = 0;
     float db = 0;
     float dc = 0;
+    // Verify if the order of input subtrees has been swapped compared to the
+    // order of the initial input trees. Used for accessing delta array.
     boolean switched = it1.isSwitched();
+    // Initialize forestdist array with deletion and insertion costs of each
+    // relevant subforest.
     forestdist[0][0] = 0;
     for (int i1 = 1; i1 <= i - ioff; i1++) {
-      forestdist[i1][0] = forestdist[i1 - 1][0] + 1;
+      forestdist[i1][0] = forestdist[i1 - 1][0] + costModel.del(it1.postL_to_node(i1 + ioff));
     }
     for (int j1 = 1; j1 <= j - joff; j1++) {
-      forestdist[0][j1] = forestdist[0][j1 - 1] + 1;
+      forestdist[0][j1] = forestdist[0][j1 - 1] + costModel.ins(it2.postL_to_node(j1 + joff));
     }
+    // Fill in the remaining costs.
     for (int i1 = 1; i1 <= i - ioff; i1++) {
       for (int j1 = 1; j1 <= j - joff; j1++) {
+        // Increment the number of subproblems.
         counter++;
-        float u = 0;
-        // [TODO] RENAME COST
-        // if(it1.labels[it1.postL_to_preL[i1 + ioff]] != it2.labels[it2.postL_to_preL[j1 + joff]]) u = costMatch;
-        u = costModel.ren(it1.preL_to_node[it1.postL_to_preL[i1 + ioff]], it2.preL_to_node[it2.postL_to_preL[j1 + joff]]);
-
-        if (getLLD(it1,i1 + ioff) == getLLD(it1,i) && getLLD(it2,j1 + joff) == getLLD(it2,j)) {
-          da = forestdist[i1 - 1][j1] + costDel;// [TODO] USE COST MODEL.
-          db = forestdist[i1][j1 - 1] + costIns;// [TODO] USE COST MODEL.
+        // Calculate partial distance values for this subproblem.
+        float u = costModel.ren(it1.postL_to_node(i1 + ioff), it2.postL_to_node(j1 + joff));
+        da = forestdist[i1 - 1][j1] + costModel.del(it1.postL_to_node(i1 + ioff));
+        db = forestdist[i1][j1 - 1] + costModel.ins(it2.postL_to_node(j1 + joff));
+        // If current subforests are subtrees.
+        if (it1.postL_to_lld[i1 + ioff] == it1.postL_to_lld[i] && it2.postL_to_lld[j1 + joff] == it2.postL_to_lld[j]) {
           dc = forestdist[i1 - 1][j1 - 1] + u;
-          forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
+          // Store the relevant distance value in delta array.
           if (switched) {
-            delta[it2.postL_to_preL[j1+joff]][it1.postL_to_preL[i1+ioff]] = forestdist[i1 - 1][j1 - 1];
+            delta[it2.postL_to_preL[j1 + joff]][it1.postL_to_preL[i1 + ioff]] = forestdist[i1 - 1][j1 - 1];
           } else {
-            delta[it1.postL_to_preL[i1+ioff]][it2.postL_to_preL[j1+joff]] = forestdist[i1 - 1][j1 - 1];
+            delta[it1.postL_to_preL[i1 + ioff]][it2.postL_to_preL[j1 + joff]] = forestdist[i1 - 1][j1 - 1];
           }
         } else {
-          da = forestdist[i1 - 1][j1] + costDel;// [TODO] USE COST MODEL.
-          db = forestdist[i1][j1 - 1] + costIns;// [TODO] USE COST MODEL.
-          dc = forestdist[getLLD(it1,i1 + ioff) - 1 - ioff][getLLD(it2,j1 + joff) - 1 - joff] +
+          dc = forestdist[it1.postL_to_lld[i1 + ioff] - 1 - ioff][it2.postL_to_lld[j1 + joff] - 1 - joff] +
             (switched ? delta[it2.postL_to_preL[j1 + joff]][it1.postL_to_preL[i1 + ioff]] : delta[it1.postL_to_preL[i1 + ioff]][it2.postL_to_preL[j1 + joff]]) + u;
-          forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
         }
+        // Calculate final minimum.
+        forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
       }
     }
   }
   // ===================== END spfL
 
   // ===================== BEGIN spfR
+  /**
+   * Implements single-path function for right paths [1, Sections 3.3,3.4,3.5].
+   * The parameters represent input subtrees for the single-path function.
+   * The order of the parameters is important. We use this single-path function
+   * due to better performance compared to spfA.
+   *
+   * @param it1 node indexer of the left-hand input subtree.
+   * @param it2 node indexer of the right-hand input subtree.
+   * @return tree edit distance between left-hand and right-hand input subtrees.
+   */
   private float spfR(NodeIndexer it1, NodeIndexer it2) {
-
+    // Initialise the array to store the keyroot nodes in the right-hand input
+    // subtree.
     int[] revKeyRoots = new int[it2.sizes[it2.getCurrentNode()]];
-
     Arrays.fill(revKeyRoots, -1);
-
-    int pathID = it2.getCurrentNode() + it2.sizes[it2.getCurrentNode()] - 1; // in r-l preorder
+    // Get the rightmost leaf node of the right-hand input subtree.
+    int pathID = it2.preL_to_rld(it2.getCurrentNode());
+    // Calculate the keyroot nodes in the right-hand input subtree.
+    // firstKeyRoot is the index in keyRoots of the first keyroot node that
+    // we have to process. We need this index because keyRoots array is larger
+    // than the number of keyroot nodes.
     int firstKeyRoot = computeRevKeyRoots(it2, it2.getCurrentNode(), pathID, revKeyRoots, 0);
-
+    // Initialise an array to store intermediate distances for subforest pairs.
     float[][] forestdist = new float[it1.sizes[it1.getCurrentNode()]+1][it2.sizes[it2.getCurrentNode()]+1];
-
+    // Compute the distances between pairs of keyroot nodes. In the left-hand
+    // input subtree only the root is the keyroot. Thus, we compute the distance
+    // between the left-hand input subtree and all keyroot nodes in the
+    // right-hand input subtree.
     for (int i = firstKeyRoot-1; i >= 0; i--) {
       revTreeEditDist(it1, it2, it1.getCurrentNode(), revKeyRoots[i], forestdist);
     }
-
+    // Return the distance between the input subtrees.
     return forestdist[it1.sizes[it1.getCurrentNode()]][it2.sizes[it2.getCurrentNode()]];
   }
 
+  /**
+   * Calculates and stores keyroot nodes for right paths of the given subtree
+   * recursively.
+   *
+   * @param it2 node indexer.
+   * @param subtreeRootNode keyroot node - recursion point.
+   * @param pathID left-to-right preorder id of the rightmost leaf node of subtreeRootNode.
+   * @param revKeyRoots array that stores all key roots in the order of their left-to-right preorder ids.
+   * @param index the index of keyRoots array where to store the next keyroot node.
+   */
   private int computeRevKeyRoots(NodeIndexer it2, int subtreeRootNode, int pathID, int[] revKeyRoots, int index) {
+    // The subtreeRootNode is a keyroot node. Add it to keyRoots.
     revKeyRoots[index] = subtreeRootNode;
+    // Increment the index to know where to store the next keyroot node.
     index++;
+    // Walk up the right path starting with the rightmost leaf of
+    // subtreeRootNode, until the child of subtreeRootNode.
     int pathNode = pathID;
     while (pathNode > subtreeRootNode) {
       int parent = it2.parents[pathNode];
+      // For each sibling to the left of pathNode, execute this method recursively.
+      // Each left sibling of pathNode is a keyroot node.
       for (int child : it2.children[parent]) {
-        if (child != pathNode) index = computeRevKeyRoots(it2, child, child+it2.sizes[child]-1, revKeyRoots, index);
+        // Execute computeRevKeyRoots recursively for the new subtree rooted at child and child's rightmost leaf node.
+        if (child != pathNode) index = computeRevKeyRoots(it2, child, it2.preL_to_rld(child), revKeyRoots, index);
       }
+      // Walk up.
       pathNode = parent;
     }
     return index;
   }
 
-  // [TODO] Substitute with postR_to_rld index of InfoTree.
-  private int getRLD(NodeIndexer it, int revPostorder) {
-    int preL = it.postR_to_preL[revPostorder];
-    return it.preL_to_postR[preL + it.sizes[preL] - 1];
-  }
-
+  /**
+   * Implements the core of spfR. Fills in forestdist array with intermediate
+   * distances of subforest pairs in dynamic-programming fashion.
+   *
+   * @param it1 node indexer of the left-hand input subtree.
+   * @param it2 node indexer of the right-hand input subtree.
+   * @param it1subtree left-to-right preorder id of the root node of the left-hand input subtree.
+   * @param it2subtree left-to-right preorder id of the root node of the right-hand input subtree.
+   * @param forestdist the array to be filled in with intermediate distances of subforest pairs.
+   */
   private void revTreeEditDist(NodeIndexer it1, NodeIndexer it2, int it1subtree, int it2subtree, float[][] forestdist) {
-
-    // i,j have to be in r-l postorder
+    // Translate input subtree root nodes to right-to-left postorder.
     int i = it1.preL_to_postR[it1subtree];
     int j = it2.preL_to_postR[it2subtree];
-
-    int ioff = getRLD(it1, i) - 1;
-    int joff = getRLD(it2, j) - 1;
+    // We need to offset the node ids for accessing forestdist array which has
+    // indices from 0 to subtree size. However, the subtree node indices do not
+    // necessarily start with 0.
+    // Whenever the original right-to-left postorder id has to be accessed, use
+    // i+ioff and j+joff.
+    int ioff = it1.postR_to_rld[i] - 1;
+    int joff = it2.postR_to_rld[j] - 1;
+    // Variables holding costs of each minimum element.
     float da = 0;
     float db = 0;
     float dc = 0;
+    // Verify if the order of input subtrees has been swapped compared to the
+    // order of the initial input trees. Used for accessing delta array.
     boolean switched = it1.isSwitched();
+    // Initialize forestdist array with deletion and insertion costs of each
+    // relevant subforest.
     forestdist[0][0] = 0;
     for (int i1 = 1; i1 <= i - ioff; i1++) {
-      forestdist[i1][0] = forestdist[i1 - 1][0] + 1;
+      forestdist[i1][0] = forestdist[i1 - 1][0] + costModel.del(it1.postR_to_node(i1 + ioff));
     }
     for (int j1 = 1; j1 <= j - joff; j1++) {
-      forestdist[0][j1] = forestdist[0][j1 - 1] + 1;
+      forestdist[0][j1] = forestdist[0][j1 - 1] + costModel.ins(it2.postR_to_node(j1 + joff));
     }
-
+    // Fill in the remaining costs.
     for (int i1 = 1; i1 <= i - ioff; i1++) {
       for (int j1 = 1; j1 <= j - joff; j1++) {
+        // Increment the number of subproblems.
         counter++;
-        float u = 0;
-        // [TODO] RENAME COST
-        // if(it1.labels[it1.postR_to_preL[i1 + ioff]] != it2.labels[it2.postR_to_preL[j1 + joff]]) u = costMatch;
-        u = costModel.ren(it1.preL_to_node[it1.postR_to_preL[i1 + ioff]], it2.preL_to_node[it2.postR_to_preL[j1 + joff]]);
-
-        if (getRLD(it1,i1 + ioff) == getRLD(it1,i) && getRLD(it2,j1 + joff) == getRLD(it2,j)) {
-          da = forestdist[i1 - 1][j1] + costDel;// [TODO] USE COST MODEL.
-          db = forestdist[i1][j1 - 1] + costIns;// [TODO] USE COST MODEL.
+        // Calculate partial distance values for this subproblem.
+        float u = costModel.ren(it1.postR_to_node(i1 + ioff), it2.postR_to_node(j1 + joff));
+        da = forestdist[i1 - 1][j1] + costModel.del(it1.postR_to_node(i1 + ioff));
+        db = forestdist[i1][j1 - 1] + costModel.ins(it2.postR_to_node(j1 + joff));
+        // If current subforests are subtrees.
+        if (it1.postR_to_rld[i1 + ioff] == it1.postR_to_rld[i] && it2.postR_to_rld[j1 + joff] == it2.postR_to_rld[j]) {
           dc = forestdist[i1 - 1][j1 - 1] + u;
-          forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
+          // Store the relevant distance value in delta array.
           if (switched) {
             delta[it2.postR_to_preL[j1+joff]][it1.postR_to_preL[i1+ioff]] = forestdist[i1 - 1][j1 - 1];
           } else {
             delta[it1.postR_to_preL[i1+ioff]][it2.postR_to_preL[j1+joff]] = forestdist[i1 - 1][j1 - 1];
           }
         } else {
-          da = forestdist[i1 - 1][j1] + costDel;// [TODO] USE COST MODEL.
-          db = forestdist[i1][j1 - 1] + costIns;// [TODO] USE COST MODEL.
-          dc = forestdist[getRLD(it1,i1 + ioff) - 1 - ioff][getRLD(it2,j1 + joff) - 1 - joff] +
+          dc = forestdist[it1.postR_to_rld[i1 + ioff] - 1 - ioff][it2.postR_to_rld[j1 + joff] - 1 - joff] +
             (switched ? delta[it2.postR_to_preL[j1 + joff]][it1.postR_to_preL[i1 + ioff]] : delta[it1.postR_to_preL[i1 + ioff]][it2.postR_to_preL[j1 + joff]]) + u;
-          forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
         }
+        // Calculate final minimum.
+        forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
       }
     }
   }
   // ===================== END spfR
 
-
+  /**
+   * Decodes the path from the optimal strategy to its type.
+   *
+   * @param pathIDWithPathIDOffset raw path id from strategy array.
+   * @param pathIDOffset offset used to distinguish between paths in the source and destination trees.
+   * @param it node indexer.
+   * @param currentRootNodePreL the left-to-right preorder id of the current subtree processed in tree decomposition phase.
+   * @param currentSubtreeSize the size of the subtree currently processed in tree decomposition phase.
+   * @return type of the strategy path (LEFT, RIGHT, INNER).
+   */
   private byte getStrategyPathType(int pathIDWithPathIDOffset, int pathIDOffset, NodeIndexer it, int currentRootNodePreL, int currentSubtreeSize) {
-    if (Integer.signum(pathIDWithPathIDOffset) == -1) return LEFT;
+    if (Integer.signum(pathIDWithPathIDOffset) == -1) {
+      return LEFT;
+    }
     int pathID = Math.abs(pathIDWithPathIDOffset) - 1;
     if (pathID >= pathIDOffset) {
       pathID = pathID - pathIDOffset;
@@ -1466,6 +1509,11 @@ public class APTED<C extends CostModel, D> {
     return INNER;
   }
 
+  /**
+   * fn array used in the algorithm before [1]. Using it does not change the
+   * complexity.
+   */
+  // TODO: Do not use it [1, Section 8.4].
   private void updateFnArray(int lnForNode, int node, int currentSubtreePreL) {
     if (lnForNode >= currentSubtreePreL) {
       fn[node] = fn[lnForNode];
@@ -1476,6 +1524,11 @@ public class APTED<C extends CostModel, D> {
     }
   }
 
+  /**
+   * ft array used in the algorithm before [1]. Using it does not change the
+   * complexity.
+   */
+  // TODO: Do not use it [1, Section 8.4].
   private void updateFtArray(int lnForNode, int node) {
     ft[node] = lnForNode;
     if(fn[node] > -1) {
@@ -1483,11 +1536,162 @@ public class APTED<C extends CostModel, D> {
     }
   }
 
-  // [TODO] Delete. The costs should be maintained in the cost model.
-  public void setCustomCosts(float costDel, float costIns, float costMatch) {
-    this.costDel = costDel;
-    this.costIns = costIns;
-    this.costMatch = costMatch;
+  /**
+   * Compute the edit mapping between two trees. The trees are input trees
+   * to the distance computation and the distance must be computed before
+   * computing the edit mapping (distances of subtree pairs are required).
+   *
+   * @return Returns list of pairs of nodes that are mapped as pairs of their
+   *         postorder IDs (starting with 1). Nodes that are deleted or
+   *         inserted are mapped to 0.
+   */
+  // TODO: Mapping computation requires more thorough documentation
+  //       (methods computeEditMapping, forestDist, mappingCost).
+  // TODO: Before computing the mapping, verify if TED has been computed.
+  //       Mapping computation should trigger distance computation if
+  //       necessary.
+  public LinkedList<int[]> computeEditMapping() {
+
+    // Initialize tree and forest distance arrays.
+    // Arrays for subtree distrances is not needed because the distances
+    // between subtrees without the root nodes are already stored in delta.
+    float[][] forestdist = new float[size1 + 1][size2 + 1];
+
+    boolean rootNodePair = true;
+
+    // forestdist for input trees has to be computed
+    forestDist(it1, it2, size1, size2, forestdist);
+
+    // empty edit mapping
+    LinkedList<int[]> editMapping = new LinkedList<int[]>();
+
+    // empty stack of tree Pairs
+    LinkedList<int[]> treePairs = new LinkedList<int[]>();
+
+    // push the pair of trees (ted1,ted2) to stack
+    treePairs.push(new int[] { size1, size2 });
+
+    while (!treePairs.isEmpty()) {
+      // get next tree pair to be processed
+      int[] treePair = treePairs.pop();
+      int lastRow = treePair[0];
+      int lastCol = treePair[1];
+
+      // compute forest distance matrix
+      if (!rootNodePair) {
+        forestDist(it1, it2, lastRow, lastCol, forestdist);
+      }
+      rootNodePair = false;
+
+      // compute mapping for current forest distance matrix
+      int firstRow = it1.postL_to_lld[lastRow-1];
+      int firstCol = it2.postL_to_lld[lastCol-1];
+      int row = lastRow;
+      int col = lastCol;
+      while ((row > firstRow) || (col > firstCol)) {
+        if ((row > firstRow) && (forestdist[row - 1][col] + costDel == forestdist[row][col])) {// TODO: USE COST MODEL.
+          // node with postorderID row is deleted from ted1
+          editMapping.push(new int[] { row, 0 });
+          row--;
+        } else if ((col > firstCol) && (forestdist[row][col - 1] + costIns == forestdist[row][col])) {// TODO: USE COST MODEL.
+          // node with postorderID col is inserted into ted2
+          editMapping.push(new int[] { 0, col });
+          col--;
+        } else {
+          // node with postorderID row in ted1 is renamed to node col
+          // in ted2
+          if ((it1.postL_to_lld[row-1] == it1.postL_to_lld[lastRow-1]) && (it2.postL_to_lld[col-1] == it2.postL_to_lld[lastCol-1])) {
+            // if both subforests are trees, map nodes
+            editMapping.push(new int[] { row, col });
+            row--;
+            col--;
+          } else {
+            // push subtree pair
+            treePairs.push(new int[] { row, col });
+
+            // continue with forest to the left of the popped
+            // subtree pair
+            row = it1.postL_to_lld[row-1];
+            col = it2.postL_to_lld[col-1];
+          }
+        }
+      }
+    }
+    return editMapping;
+  }
+
+
+  /**
+   * Recalculates distances between subforests of two subtrees. These values
+   * are used in mapping computation to track back the origin of minimum values.
+   * It is basen on Zhang and Shasha algorithm.
+   *
+   * <p>The rename cost must be added in the last line. Otherwise the formula is
+   * incorrect. This is due to delta storing distances between subtrees
+   * without the root nodes.
+   *
+   * <p>i and j are postorder ids of the nodes - starting with 1.
+   *
+   * @param ted1 node indexer of the source input tree.
+   * @param ted2 node indexer of the destination input tree.
+   * @param i subtree root of source tree that is to be mapped.
+   * @param j subtree root of destination tree that is to be mapped.
+   * @param forestdist array to store distances between subforest pairs.
+   */
+  private void forestDist(NodeIndexer ted1, NodeIndexer ted2, int i, int j, float[][] forestdist) {
+
+    forestdist[ted1.postL_to_lld[i-1]][ted2.postL_to_lld[j-1]] = 0;
+
+    for (int di = ted1.postL_to_lld[i-1]+1; di <= i; di++) {
+      forestdist[di][ted2.postL_to_lld[j-1]] = forestdist[di - 1][ted2.postL_to_lld[j-1]] + costModel.del(ted1.postL_to_node(di-1));
+      for (int dj = ted2.postL_to_lld[j-1]+1; dj <= j; dj++) {
+        forestdist[ted1.postL_to_lld[i-1]][dj] = forestdist[ted1.postL_to_lld[i-1]][dj - 1] + costModel.ins(ted2.postL_to_node(dj-1));
+        float costRen = costModel.ren(ted1.postL_to_node(di-1), ted2.postL_to_node(dj-1));
+        // TODO: The first to elements of the minimum can be computed here,
+        //       similarly to spfL and spfR.
+        if ((ted1.postL_to_lld[di-1] == ted1.postL_to_lld[i-1]) && (ted2.postL_to_lld[dj-1] == ted2.postL_to_lld[j-1])) {
+          forestdist[di][dj] = Math.min(Math.min(
+                  forestdist[di - 1][dj] + costModel.del(ted1.postL_to_node(di-1)),
+                  forestdist[di][dj - 1] + costModel.ins(ted2.postL_to_node(dj-1))),
+                  forestdist[di - 1][dj - 1] + costRen);
+          // If substituted with delta, this will overwrite the value
+          // in delta.
+          // It looks that we don't have to write this value.
+          // Conceptually it is correct because we already have all
+          // the values in delta for subtrees without the root nodes,
+          // and we need these.
+          // treedist[di][dj] = forestdist[di][dj];
+        } else {
+          // di and dj are postorder ids of the nodes - starting with 1
+          // Substituted 'treedist[di][dj]' with 'delta[it1.postL_to_preL[di-1]][it2.postL_to_preL[dj-1]]'
+          forestdist[di][dj] = Math.min(Math.min(
+                  forestdist[di - 1][dj] + costModel.del(ted1.postL_to_node(di-1)),
+                  forestdist[di][dj - 1] + costModel.ins(ted2.postL_to_node(dj-1))),
+                  forestdist[ted1.postL_to_lld[di-1]][ted2.postL_to_lld[dj-1]] + delta[it1.postL_to_preL[di-1]][it2.postL_to_preL[dj-1]] + costRen);
+        }
+      }
+    }
+  }
+
+  /**
+   * Calculates the cost of an edit mapping. It traverses the mapping and sums
+   * up the cost of each operation. The costs are taken from the cost model.
+   *
+   * @param mapping an edit mapping.
+   * @return cost of edit mapping.
+   */
+  public float mappingCost(LinkedList<int[]> mapping) {
+    float cost = 0.0f;
+    for (int i = 0; i < mapping.size(); i++) {
+      if (mapping.get(i)[0] == 0) { // Insertion.
+          cost += costModel.ins(it2.postL_to_node(mapping.get(i)[1]-1));
+      } else if (mapping.get(i)[1] == 0) { // Deletion.
+          cost += costModel.del(it1.postL_to_node(mapping.get(i)[0]-1));
+      } else { // Rename.
+        cost += costModel.ren(it1.postL_to_node(mapping.get(i)[0]-1), it2.postL_to_node(mapping.get(i)[1]-1));
+      }
+    }
+    return cost;
   }
 
 }

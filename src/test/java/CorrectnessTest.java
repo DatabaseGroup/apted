@@ -61,11 +61,13 @@ public class CorrectnessTest {
    */
   private static final String CORRECTNESS_TESTS_PATH = "correctness_test_cases.json";
 
+  // IDEA: Write tests for other cost models.
+
   /**
    * APTED algorithm initialized only once for all test cases. Currently only
    * unit-cost test cases are implemented.
    */
-  private APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>((float)1.0, (float)1.0, (float)1.0, new StringUnitCostModel());
+  private APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
 
   /**
    * Test case object holding parameters of a single test case.
@@ -205,7 +207,7 @@ public class CorrectnessTest {
     Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
     Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
     // This cast is safe due to unit cost.
-    int result = (int)apted.nonNormalizedTreeDist(t1, t2);
+    int result = (int)apted.computeEditDistance(t1, t2);
     assertEquals(testCase.getD(), result);
   }
 
@@ -223,9 +225,52 @@ public class CorrectnessTest {
     Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
     Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
     // This cast is safe due to unit cost. Input trees are swapped.
-    int result = (int)apted.nonNormalizedTreeDist(t2, t1);
+    int result = (int)apted.computeEditDistance(t2, t1);
     assertEquals(testCase.getD(), result);
   }
+
+  /**
+   * Compute TED for a single test case and compare to the correct value. Uses
+   * node labels with a single string value and unit cost model.
+   *
+   * <p>Triggers spf_L to execute. The strategy is fixed to left paths in the
+   * left-hand tree.
+   *
+   * @see node.StringNodeData
+   * @see costmodel.StringUnitCostModel
+   */
+  @Test
+  public void correctnessDistanceTestStringUnitCost_spfL() {
+    BracketStringInputParser parser = new BracketStringInputParser();
+    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+    // This cast is safe due to unit cost.
+    int result = (int)apted.computeEditDistance_spfTest(t1, t2, 0);
+    assertEquals(testCase.getD(), result);
+  }
+
+  /**
+   * Compute TED for a single test case and compare to the correct value. Uses
+   * node labels with a single string value and unit cost model.
+   *
+   *<p>Triggers spf_R to execute. The strategy is fixed to right paths in the
+   * left-hand tree.
+   *
+   * @see node.StringNodeData
+   * @see costmodel.StringUnitCostModel
+   */
+  @Test
+  public void correctnessDistanceTestStringUnitCost_spfR() {
+    BracketStringInputParser parser = new BracketStringInputParser();
+    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+    // This cast is safe due to unit cost.
+    int result = (int)apted.computeEditDistance_spfTest(t1, t2, 1);
+    assertEquals(testCase.getD(), result);
+  }
+
+  // IDEA: Write test that triggers spf_A for each subtree pair - disallow
+  //       using spf_L and spf_R.
 
   /**
    * Compute minimum-cost edit mapping for a single test case and compare its
@@ -242,7 +287,7 @@ public class CorrectnessTest {
     Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
     // Although we don't need TED value yet, TED must be computed before the
     // mapping. This cast is safe due to unit cost.
-    apted.nonNormalizedTreeDist(t1, t2);
+    apted.computeEditDistance(t1, t2);
     // Get TED value corresponding to the computed mapping.
     LinkedList<int[]> mapping = apted.computeEditMapping();
     // This cast is safe due to unit cost.

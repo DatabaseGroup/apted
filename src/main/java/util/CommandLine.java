@@ -171,7 +171,7 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
    * @param args array of command line arguments passed when executing jar file.
    */
    public void runCommandLine(String[] args) {
-    rted = new APTED<C, StringNodeData>(1, 1, 1, costModel);
+    rted = new APTED<C, StringNodeData>(costModel);
     try {
       for (int i = 0; i < args.length; i++) {
         if (args[i].equals("--help") || args[i].equals("-h")) {
@@ -210,7 +210,7 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
 
     long time1 = (new Date()).getTime();
 
-    ted = rted.nonNormalizedTreeDist(t1, t2);
+    ted = rted.computeEditDistance(t1, t2);
 
     long time2 = (new Date()).getTime();
     if (verbose) {
