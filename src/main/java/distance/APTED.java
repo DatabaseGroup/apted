@@ -137,25 +137,6 @@ public class APTED<C extends CostModel, D> {
   private long counter;
 
   /**
-   * Fixed cost of deleting a node.
-   * @deprecated
-   */
-  // TODO: USE COST MODEL.
-  private float costDel = 1.0f;
-  /**
-   * Fixed cost of inserting a node.
-   * @deprecated
-   */
-  // TODO: USE COST MODEL.
-  private float costIns = 1.0f;
-  /**
-   * Fixed cost of renaming two nodes.
-   * @deprecated
-   */
-  // TODO: USE COST MODEL.
-  private float costMatch = 1.0f;
-
-  /**
    * Cost model to be used for calculating costs of edit operations.
    */
   private C costModel;
@@ -710,6 +691,58 @@ public class APTED<C extends CostModel, D> {
   }
 
   /**
+   * Implements spf1 single path function for the case when one of the subtrees
+   * is a single node [2, Section 6.1, Algorithm 2].
+   *
+   * @param ni1 node indexer for the source input subtree.
+   * @param ni2 node indexer for the destination input subtree.
+   * @param subtreeRootNode1 root node of a subtree in the source input tree.
+   * @param subtreeRootNode2 root node of a subtree in the destination input tree.
+   * @return the tree edit distance between two subtrees of the source and destination input subtrees.
+   */
+  // TODO: Merge this method with the initialisation loop in tedInit.
+  //       Currently, spf1 doesn't have to store distances in delta, because
+  //       all of them have been stored in tedInit.
+  private float spf1 (NodeIndexer ni1, int subtreeRootNode1, NodeIndexer ni2, int subtreeRootNode2) {
+    int subtreeSize1 = ni1.sizes[subtreeRootNode1];
+    int subtreeSize2 = ni2.sizes[subtreeRootNode2];
+    if (subtreeSize1 == 1 && subtreeSize2 == 1) {
+      return costModel.ren(ni1.preL_to_node[subtreeRootNode1], ni2.preL_to_node[subtreeRootNode2]);
+    }
+    if (subtreeSize1 == 1) {
+      float cost = ni2.preL_to_sumInsCost[subtreeRootNode2];
+      float minRenMinusIns = cost;
+      float nodeRenMinusIns = 0;
+      Node<D> n1 = ni1.preL_to_node[subtreeRootNode1];
+      Node<D> n2 = null;
+      for (int i = subtreeRootNode2; i < subtreeRootNode2 + subtreeSize2; i++) {
+        n2 = ni2.preL_to_node[i];
+        nodeRenMinusIns = costModel.ren(n1, n2) - costModel.ins(n2);
+        if (nodeRenMinusIns < minRenMinusIns) {
+          minRenMinusIns = nodeRenMinusIns;
+        }
+      }
+      return cost + minRenMinusIns;
+    }
+    if (subtreeSize2 == 1) {
+      float cost = ni1.preL_to_sumDelCost[subtreeRootNode1];
+      float minRenMinusDel = cost;
+      float nodeRenMinusDel = 0;
+      Node<D> n1 = null;
+      Node<D> n2 = ni2.preL_to_node[subtreeRootNode2];
+      for (int i = subtreeRootNode1; i < subtreeRootNode1 + subtreeSize1; i++) {
+        n1 = ni1.preL_to_node[i];
+        nodeRenMinusDel = costModel.ren(n1, n2) - costModel.del(n1);
+        if (nodeRenMinusDel < minRenMinusDel) {
+          minRenMinusDel = nodeRenMinusDel;
+        }
+      }
+      return cost + minRenMinusDel;
+    }
+    return -1;
+  }
+
+  /**
    * Implements GTED algorithm [1, Section 3.4].
    *
    * @param it1 node indexer for the source input tree.
@@ -723,24 +756,10 @@ public class APTED<C extends CostModel, D> {
     int subtreeSize1 = it1.sizes[currentSubtree1];
     int subtreeSize2 = it2.sizes[currentSubtree2];
 
-    // SINGLE-NODE SUBTREE
-    // TODO: USE COST MODEL.
-    // TODO: Currently suited for unit cost only.
+    // Use spf1.
     if ((subtreeSize1 == 1 || subtreeSize2 == 1)) {
-      float result = Math.max(it1.sizes[currentSubtree1], it2.sizes[currentSubtree2]);
-      boolean matchFound = false;
-
-      for (int i = currentSubtree1; i < currentSubtree1 + it1.sizes[currentSubtree1]; i++) {
-        for (int j = currentSubtree2; j < currentSubtree2 + it2.sizes[currentSubtree2]; j++) {
-          if (!matchFound) {
-            matchFound = costModel.ren(it1.preL_to_node[i], it2.preL_to_node[j]) == 0.0;
-          }
-          counter++;
-        }
-      }
-      return result += (matchFound ? -1.0D : 0.0D);
+      return spf1(it1, currentSubtree1, it2, currentSubtree2);
     }
-    // END
 
     int strategyPathID = (int)delta[currentSubtree1][currentSubtree2];
 
@@ -816,6 +835,9 @@ public class APTED<C extends CostModel, D> {
    * @return tree edit distance between left-hand and right-hand input subtrees.
    */
   // TODO: Document the internals. Point to lines of the algorithm.
+  // The implementation has been micro-tuned: variables initialised once,
+  // pointers to arrays precomputed and fixed for entire lower-level loops,
+  // parts of lower-level loops that don't change moved to upper-level loops.
   private float spfA(NodeIndexer it1, NodeIndexer it2, int pathID, byte pathType) {
     boolean treesSwitched = it1.isSwitched();
     Node<D>[] it2nodes = it2.preL_to_node;
@@ -830,14 +852,23 @@ public class APTED<C extends CostModel, D> {
     int[] it2preR_to_preL = it2.preR_to_preL;
     int currentSubtreePreL1 = it1.getCurrentNode();
     int currentSubtreePreL2 = it2.getCurrentNode();
+
+    // Variables to incrementally sum up the forest sizes.
     int currentForestSize1 = 0;
     int currentForestSize2 = 0;
     int tmpForestSize1 = 0;
+    // Variables to incrementally sum up the forest cost.
+    float currentForestCost1 = 0;
+    float currentForestCost2 = 0;
+    float tmpForestCost1 = 0;
+
     int subtreeSize2 = it2.sizes[currentSubtreePreL2];
     int subtreeSize1 = it1.sizes[currentSubtreePreL1];
     float[][] t = new float[subtreeSize2+1][subtreeSize2+1];
     float[][] s = new float[subtreeSize1+1][subtreeSize2+1];
     float minCost = -1;
+    // sp1, sp2 and sp3 correspond to three elements of the minimum in the
+    // recursive formula [1, Figure 12].
     float sp1 = 0;
     float sp2 = 0;
     float sp3 = 0;
@@ -855,8 +886,11 @@ public class APTED<C extends CostModel, D> {
     boolean leftPart,rightPart,fForestIsTree,lFIsConsecutiveNodeOfCurrentPathNode,lFIsLeftSiblingOfCurrentPathNode,
     rFIsConsecutiveNodeOfCurrentPathNode,rFIsRightSiblingOfCurrentPathNode;
     float[] sp1spointer,sp2spointer,sp3spointer,sp3deltapointer,swritepointer,sp1tpointer,sp3tpointer;
+    // These variables store the id of the source (which array) of looking up
+    // elements of the minimum in the recursive formula [1, Figures 12,13].
     byte sp1source,sp3source;
-    for (; endPathNode >= currentSubtreePreL1; endPathNode = it1parents[endPathNode]) {
+    // Loop A [1, Algorithm 3] - walk up the path.
+    while (endPathNode >= currentSubtreePreL1) {
       it1PreLoff = endPathNode;
       it1PreRoff = it1preL_to_preR[endPathNode];
       rFlast = -1;
@@ -875,6 +909,7 @@ public class APTED<C extends CostModel, D> {
       } else {
         rightPart = false;
       }
+      // Deal with nodes to the left of the path.
       if (pathType == 1 || pathType == 2 && leftPart) {
         if (startPathNode == -1) {
           rFfirst = endPathNode_in_preR;
@@ -894,12 +929,16 @@ public class APTED<C extends CostModel, D> {
             fn[i] = -1;
             ft[i] = -1;
         }
+        // Store the current size and cost of forest in F.
         tmpForestSize1 = currentForestSize1;
+        tmpForestCost1 = currentForestCost1;
+        // Loop B [1, Algoritm 3] - for all nodes in G (right-hand input tree).
         for (int rG = rGfirst; rG >= rGlast; rG--) {
           lGfirst = it2preR_to_preL[rG];
           rG_in_preL = it2preR_to_preL[rG];
           rGminus1_in_preL = rG <= it2preL_to_preR[currentSubtreePreL2] ? 0x7fffffff : it2preR_to_preL[rG - 1];
           parent_of_rG_in_preL = it2parents[rG_in_preL];
+          // This if statement decides on the last lG node for Loop D [1, Algorithm 3];
           if (pathType == 1){
             if (lGfirst == currentSubtreePreL2 || rGminus1_in_preL != parent_of_rG_in_preL) {
               lGlast = lGfirst;
@@ -912,17 +951,25 @@ public class APTED<C extends CostModel, D> {
           updateFnArray(it2.preL_to_ln[lGfirst], lGfirst, currentSubtreePreL2);
           updateFtArray(it2.preL_to_ln[lGfirst], lGfirst);
           int rF = rFfirst;
+          // Reset size and cost of the forest in F.
           currentForestSize1 = tmpForestSize1;
+          currentForestCost1 = tmpForestCost1;
+          // Loop C [1, Algorithm 3] - for all nodes to the left of the path node.
           for (int lF = lFfirst; lF >= lFlast; lF--) {
+            // This if statement fixes rF node.
             if (lF == lFlast && !rightPart) {
               rF = rFlast;
             }
+            lFNode = it1.preL_to_node[lF];
+            // Increment size and cost of F forest by node lF.
             currentForestSize1++;
-            currentForestSize2 = it2sizes[lGfirst] - 1;
+            currentForestCost1 += costModel.del(lFNode);
+            // Reset size and cost of forest in G to subtree G_lGfirst.
+            currentForestSize2 = it2sizes[lGfirst];
+            currentForestCost2 = it2.preL_to_sumInsCost[lGfirst];
             lF_in_preR = it1preL_to_preR[lF];
             fForestIsTree = lF_in_preR == rF;
             lFSubtreeSize = it1sizes[lF];
-            lFNode = it1.preL_to_node[lF];
             lFIsConsecutiveNodeOfCurrentPathNode = startPathNode - lF == 1;
             lFIsLeftSiblingOfCurrentPathNode = lF + lFSubtreeSize == startPathNode;
             sp1spointer = s[(lF + 1) - it1PreLoff];
@@ -930,12 +977,12 @@ public class APTED<C extends CostModel, D> {
             sp3spointer = s[0];
             sp3deltapointer = treesSwitched ? null : delta[lF];
             swritepointer = s[lF - it1PreLoff];
-            sp1source = 1;
-            sp3source = 1;
-            if (fForestIsTree) {
-              if (lFSubtreeSize == 1) {
+            sp1source = 1; // Search sp1 value in s array by default.
+            sp3source = 1; // Search second part of sp3 value in s array by default.
+            if (fForestIsTree) { // F_{lF,rF} is a tree.
+              if (lFSubtreeSize == 1) { // F_{lF,rF} is a single node.
                 sp1source = 3;
-              } else if (lFIsConsecutiveNodeOfCurrentPathNode) {
+              } else if (lFIsConsecutiveNodeOfCurrentPathNode) { // F_{lF,rF}-lF is the path node subtree.
                 sp1source = 2;
               }
               sp3 = 0;
@@ -944,7 +991,7 @@ public class APTED<C extends CostModel, D> {
               if (lFIsConsecutiveNodeOfCurrentPathNode) {
                 sp1source = 2;
               }
-              sp3 = currentForestSize1 - lFSubtreeSize * costDel;// TODO: USE COST MODEL - subforest cost.
+              sp3 = currentForestCost1 - it1.preL_to_sumDelCost[lF]; // USE COST MODEL - Delete F_{lF,rF}-F_lF.
               if (lFIsLeftSiblingOfCurrentPathNode) {
                 sp3source = 3;
               }
@@ -952,44 +999,56 @@ public class APTED<C extends CostModel, D> {
             if (sp3source == 1) {
               sp3spointer = s[(lF + lFSubtreeSize) - it1PreLoff];
             }
-            if (currentForestSize2 + 1 == 1) {
-              sp2 = currentForestSize1 * costDel;// TODO: USE COST MODEL - subforest cost.
-            } else {
-              sp2 = q[lF];
-            }
+            // Go to first lG.
             int lG = lGfirst;
-            currentForestSize2++;
+            // currentForestSize2++;
+            // sp1, sp2, sp3 -- Done here for the first node in Loop D. It differs for consecutive nodes.
+            // sp1 -- START
             switch(sp1source) {
               case 1: sp1 = sp1spointer[lG - it2PreLoff]; break;
               case 2: sp1 = t[lG - it2PreLoff][rG - it2PreRoff]; break;
-              case 3: sp1 = currentForestSize2 * costIns; break;// TODO: USE COST MODEL - subforest cost.
+              case 3: sp1 = currentForestCost2; break; // USE COST MODEL - Insert G_{lG,rG}.
             }
-            sp1 += costDel;// TODO: USE COST MODEL.
-            minCost = sp1;
-            sp2 += costIns;// TODO: USE COST MODEL.
-            if (sp2 < minCost) {
+            sp1 += costModel.del(lFNode);// USE COST MODEL - Delete lF, leftmost root node in F_{lF,rF}.
+            // sp1 -- END
+            minCost = sp1; // Start with sp1 as minimal value.
+            // sp2 -- START
+            if (currentForestSize2 == 1) { // G_{lG,rG} is a single node.
+              sp2 = currentForestCost1; // USE COST MODEL - Delete F_{lF,rF}.
+            } else { // G_{lG,rG} is a tree.
+              sp2 = q[lF];
+            }
+            sp2 += costModel.ins(it2nodes[lG]);// USE COST MODEL - Insert lG, leftmost root node in G_{lG,rG}.
+            if (sp2 < minCost) { // Check if sp2 is minimal value.
               minCost = sp2;
             }
+            // sp2 -- END
+            // sp3 -- START
             if (sp3 < minCost) {
               sp3 += treesSwitched ? delta[lG][lF] : sp3deltapointer[lG];
               if (sp3 < minCost) {
-                sp3 += costModel.ren(lFNode, it2nodes[lG]);
+                sp3 += costModel.ren(lFNode, it2nodes[lG]); // USE COST MODEL - Rename the leftmost root nodes in F_{lF,rF} and G_{lG,rG}.
                 if(sp3 < minCost) {
                   minCost = sp3;
                 }
               }
             }
+            // sp3 -- END
             swritepointer[lG - it2PreLoff] = minCost;
+            // Go to next lG.
             lG = ft[lG];
             counter++;
+            // Loop D [1, Algorithm 3] - for all nodes to the left of rG.
             while (lG >= lGlast) {
+              // Increment size and cost of G forest by node lG.
               currentForestSize2++;
+              currentForestCost2 += costModel.ins(it2nodes[lG]);
               switch(sp1source) {
-                case 1: sp1 = sp1spointer[lG - it2PreLoff] + costDel; break;// TODO: USE COST MODEL.
-                case 2: sp1 = t[lG - it2PreLoff][rG - it2PreRoff] + costDel; break;// TODO: USE COST MODEL.
-                case 3: sp1 = currentForestSize2 * costIns + costDel; break;// TODO: USE COST MODEL.
+                case 1: sp1 = sp1spointer[lG - it2PreLoff] + costModel.del(lFNode); break; // USE COST MODEL - Delete lF, leftmost root node in F_{lF,rF}.
+                case 2: sp1 = t[lG - it2PreLoff][rG - it2PreRoff] + costModel.del(lFNode); break; // USE COST MODEL - Delete lF, leftmost root node in F_{lF,rF}.
+                case 3: sp1 = currentForestCost2 + costModel.del(lFNode); break; // USE COST MODEL - Insert G_{lG,rG} and elete lF, leftmost root node in F_{lF,rF}.
               }
-              sp2 = sp2spointer[fn[lG] - it2PreLoff] + costDel;// TODO: USE COST MODEL.
+              sp2 = sp2spointer[fn[lG] - it2PreLoff] + costModel.ins(it2nodes[lG]); // USE COST MODEL - Insert lG, leftmost root node in G_{lG,rG}.
               minCost = sp1;
               if(sp2 < minCost) {
                 minCost = sp2;
@@ -998,11 +1057,11 @@ public class APTED<C extends CostModel, D> {
               if (sp3 < minCost) {
                 switch(sp3source) {
                     case 1: sp3 += sp3spointer[fn[(lG + it2sizes[lG]) - 1] - it2PreLoff]; break;
-                    case 2: sp3 += (currentForestSize2 - it2sizes[lG]) * costIns; break;// TODO: USE COST MODEL - subforest cost.
+                    case 2: sp3 += currentForestCost2 - it2.preL_to_sumInsCost[lG]; break; // USE COST MODEL - Insert G_{lG,rG}-G_lG.
                     case 3: sp3 += t[fn[(lG + it2sizes[lG]) - 1] - it2PreLoff][rG - it2PreRoff]; break;
                 }
                 if (sp3 < minCost) {
-                  sp3 += costModel.ren(lFNode, it2nodes[lG]);
+                  sp3 += costModel.ren(lFNode, it2nodes[lG]); // USE COST MODEL - Rename the leftmost root nodes in F_{lF,rF} and G_{lG,rG}.
                   if (sp3 < minCost) {
                     minCost = sp3;
                   }
@@ -1040,6 +1099,7 @@ public class APTED<C extends CostModel, D> {
           }
         }
       }
+      // Deal with nodes to the right of the path.
       if (pathType == 0 || pathType == 2 && rightPart || pathType == 2 && !leftPart && !rightPart) {
         if (startPathNode == -1) {
           lFfirst = endPathNode;
@@ -1057,7 +1117,10 @@ public class APTED<C extends CostModel, D> {
           fn[i] = -1;
           ft[i] = -1;
         }
+        // Store size and cost of the current forest in F.
         tmpForestSize1 = currentForestSize1;
+        tmpForestCost1 = currentForestCost1;
+        // Loop B' [1, Algorithm 3] - for all nodes in G.
         for (int lG = lGfirst; lG >= lGlast; lG--) {
           rGfirst = it2preL_to_preR[lG];
           updateFnArray(it2.preR_to_ln[rGfirst], rGfirst, it2preL_to_preR[currentSubtreePreL2]);
@@ -1066,7 +1129,9 @@ public class APTED<C extends CostModel, D> {
           lGminus1_in_preR = lG <= currentSubtreePreL2 ? 0x7fffffff : it2preL_to_preR[lG - 1];
           parent_of_lG = it2parents[lG];
           parent_of_lG_in_preR = parent_of_lG == -1 ? -1 : it2preL_to_preR[parent_of_lG];
+          // Reset size and cost of forest if F.
           currentForestSize1 = tmpForestSize1;
+          currentForestCost1 = tmpForestCost1;
           if (pathType == 0) {
             if (lG == currentSubtreePreL2) {
               rGlast = rGfirst;
@@ -1078,13 +1143,18 @@ public class APTED<C extends CostModel, D> {
           } else {
             rGlast = rGfirst == it2preL_to_preR[currentSubtreePreL2] ? rGfirst : it2preL_to_preR[currentSubtreePreL2];
           }
+          // Loop C' [1, Algorithm 3] - for all nodes to the right of the path node.
           for (int rF = rFfirst; rF >= rFlast; rF--) {
             if (rF == rFlast) {
               lF = lFlast;
             }
-            currentForestSize1++;
-            currentForestSize2 = it2sizes[lG] - 1;
             rF_in_preL = it1preR_to_preL[rF];
+            // Increment size and cost of F forest by node rF.
+            currentForestSize1++;
+            currentForestCost1 += costModel.del(it1.preL_to_node[rF_in_preL]);
+            // Reset size and cost of G forest to G_lG.
+            currentForestSize2 = it2sizes[lG];
+            currentForestCost2 = it2.preL_to_sumInsCost[lG];
             rFSubtreeSize = it1sizes[rF_in_preL];
             if (startPathNode > 0) {
               rFIsConsecutiveNodeOfCurrentPathNode = startPathNode_in_preR - rF == 1;
@@ -1116,7 +1186,7 @@ public class APTED<C extends CostModel, D> {
               if (rFIsConsecutiveNodeOfCurrentPathNode) {
                 sp1source = 2;
               }
-              sp3 = currentForestSize1 - rFSubtreeSize * costDel;// TODO: USE COST MODEL - subforest cost.
+              sp3 = currentForestCost1 - it1.preL_to_sumDelCost[rF_in_preL]; // USE COST MODEL - Delete F_{lF,rF}-F_rF.
               if (rFIsRightSiblingOfCurrentPathNode) {
                 sp3source = 3;
               }
@@ -1124,8 +1194,8 @@ public class APTED<C extends CostModel, D> {
             if (sp3source == 1) {
               sp3spointer = s[(rF + rFSubtreeSize) - it1PreRoff];
             }
-            if (currentForestSize2 + 1 == 1) {
-              sp2 = currentForestSize1 * costDel;// TODO: USE COST MODEL - subforest cost.
+            if (currentForestSize2 == 1) {
+              sp2 = currentForestCost1;// USE COST MODEL - Delete F_{lF,rF}.
             } else {
               sp2 = q[rF];
             }
@@ -1135,11 +1205,11 @@ public class APTED<C extends CostModel, D> {
             switch (sp1source) {
               case 1: sp1 = sp1spointer[rG - it2PreRoff]; break;
               case 2: sp1 = sp1tpointer[rG - it2PreRoff]; break;
-              case 3: sp1 = currentForestSize2 * costIns; break;// TODO: USE COST MODEL - subforest cost.
+              case 3: sp1 = currentForestCost2; break; // USE COST MODEL - Insert G_{lG,rG}.
             }
-            sp1 += costDel;// TODO: USE COST MODEL.
+            sp1 += costModel.del(rFNode); // USE COST MODEL - Delete rF.
             minCost = sp1;
-            sp2 += costIns;// TODO: USE COST MODEL.
+            sp2 += costModel.ins(it2nodes[rGfirst_in_preL]); // USE COST MODEL - Insert rG.
             if (sp2 < minCost) {
               minCost = sp2;
             }
@@ -1155,15 +1225,18 @@ public class APTED<C extends CostModel, D> {
             swritepointer[rG - it2PreRoff] = minCost;
             rG = ft[rG];
             counter++;
+            // Loop D' [1, Algorithm 3] - for all nodes to the right of lG;
             while (rG >= rGlast) {
-              currentForestSize2++;
               rG_in_preL = it2preR_to_preL[rG];
+              // Increment size and cost of G forest by node rG.
+              currentForestSize2++;
+              currentForestCost2 += costModel.ins(it2nodes[rG_in_preL]);
               switch (sp1source) {
-                case 1: sp1 = sp1spointer[rG - it2PreRoff] + costDel; break;// TODO: USE COST MODEL.
-                case 2: sp1 = sp1tpointer[rG - it2PreRoff] + costDel; break;// TODO: USE COST MODEL.
-                case 3: sp1 = currentForestSize2 * costIns + costDel; break;// TODO: USE COST MODEL.
+                case 1: sp1 = sp1spointer[rG - it2PreRoff] + costModel.del(rFNode); break; // USE COST MODEL - Delete rF.
+                case 2: sp1 = sp1tpointer[rG - it2PreRoff] + costModel.del(rFNode); break; // USE COST MODEL - Delete rF.
+                case 3: sp1 = currentForestCost2 + costModel.del(rFNode); break; // USE COST MODEL - Insert G_{lG,rG} and delete rF.
               }
-              sp2 = sp2spointer[fn[rG] - it2PreRoff] + costIns;// TODO: USE COST MODEL.
+              sp2 = sp2spointer[fn[rG] - it2PreRoff] + costModel.ins(it2nodes[rG_in_preL]); // USE COST MODEL - Insert rG.
               minCost = sp1;
               if (sp2 < minCost) {
                 minCost = sp2;
@@ -1172,11 +1245,11 @@ public class APTED<C extends CostModel, D> {
               if (sp3 < minCost) {
                 switch (sp3source) {
                   case 1: sp3 += sp3spointer[fn[(rG + it2sizes[rG_in_preL]) - 1] - it2PreRoff]; break;
-                  case 2: sp3 += (currentForestSize2 - it2sizes[rG_in_preL]) * costIns; break;// TODO: USE COST MODEL - subforest cost.
+                  case 2: sp3 += currentForestCost2 - it2.preL_to_sumInsCost[rG_in_preL]; break; // USE COST MODEL - Insert G_{lG,rG}-G_rG.
                   case 3: sp3 += sp3tpointer[fn[(rG + it2sizes[rG_in_preL]) - 1] - it2PreRoff]; break;
                 }
                 if (sp3 < minCost) {
-                  sp3 += costModel.ren(rFNode, it2nodes[rG_in_preL]);
+                  sp3 += costModel.ren(rFNode, it2nodes[rG_in_preL]); // USE COST MODEL - Rename rF to rG.
                   if (sp3 < minCost) {
                     minCost = sp3;
                   }
@@ -1211,7 +1284,9 @@ public class APTED<C extends CostModel, D> {
           }
         }
       }
+      // Walk up the path by one node.
       startPathNode = endPathNode;
+      endPathNode = it1parents[endPathNode];
     }
     return minCost;
   }
@@ -1589,11 +1664,11 @@ public class APTED<C extends CostModel, D> {
       int row = lastRow;
       int col = lastCol;
       while ((row > firstRow) || (col > firstCol)) {
-        if ((row > firstRow) && (forestdist[row - 1][col] + costDel == forestdist[row][col])) {// TODO: USE COST MODEL.
+        if ((row > firstRow) && (forestdist[row - 1][col] + costModel.del(it1.postL_to_node(row-1)) == forestdist[row][col])) { // USE COST MODEL - Delete node row of source tree.
           // node with postorderID row is deleted from ted1
           editMapping.push(new int[] { row, 0 });
           row--;
-        } else if ((col > firstCol) && (forestdist[row][col - 1] + costIns == forestdist[row][col])) {// TODO: USE COST MODEL.
+        } else if ((col > firstCol) && (forestdist[row][col - 1] + costModel.ins(it2.postL_to_node(col-1)) == forestdist[row][col])) { // USE COST MODEL - Insert node col of destination tree.
           // node with postorderID col is inserted into ted2
           editMapping.push(new int[] { 0, col });
           col--;
