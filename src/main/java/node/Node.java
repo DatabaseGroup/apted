@@ -33,7 +33,18 @@ import java.util.Vector;
  * @param <D> the type of node data (node label).
  */
 public class Node<D> {
+
+  /**
+   * Information associated to and stored at each node. This can be anything
+   * and depends on the application, for example, string label, key-value pair,
+   * vector of values, etc.
+   */
   private D nodeData;
+
+  /**
+   * Array of pointers to this node's children. The order of children is
+   * significant due to the definition of ordered trees.
+   */
   private Vector<Node<D>> children;
 
   /**

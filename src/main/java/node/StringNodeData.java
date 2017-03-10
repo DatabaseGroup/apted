@@ -30,6 +30,10 @@ package node;
  * @see Node
  */
 public class StringNodeData {
+
+  /**
+   * The label of a node.
+   */
   private String label;
 
   /**
