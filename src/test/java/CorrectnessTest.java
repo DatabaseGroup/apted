@@ -35,7 +35,6 @@ import org.junit.runners.Parameterized.Parameters;
 import com.google.gson.Gson;
 import static org.junit.Assert.assertEquals;
 import distance.APTED;
-import util.LblTree;
 import parser.BracketStringInputParser;
 import node.Node;
 import node.StringNodeData;

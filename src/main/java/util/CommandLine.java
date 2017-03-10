@@ -27,8 +27,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.Scanner;
-import java.util.Vector;
 import distance.APTED;
 import node.Node;
 import node.StringNodeData;
