@@ -125,7 +125,7 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
       "\n" +
       "    Mateusz Pawlik, Nikolaus Augsten";
 
-  // [TODO] Review if all fields are necessary.
+  // TODO: Review if all fields are necessary.
   private String wrongArgumentsMessage = "Wrong arguments. Try \"java -jar RTED.jar --help\" for help.";
 
   private boolean run, custom, array, strategy, ifSwitch, sota, verbose, demaine, mapping;
@@ -179,7 +179,7 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
           parseTreesFromCommandLine(args[i+1], args[i+2]);
           i = i+2;
           run = true;
-        // [TODO] -f option temporarily disabled for refactoring.
+        // TODO: -f option temporarily disabled for refactoring.
         // } else if (args[i].equals("-f") || args[i].equals("--files")) {
         //   parseTreesFromFiles(args[i+1], args[i+2]);
         //   i = i+2;
@@ -250,7 +250,7 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
     }
 	}
 
-  // [TODO] Bring the functionalitites below back to life.
+  // TODO: Bring the functionalitites below back to life.
   // /**
   //  * Parses two input trees from given files.
   //  *
