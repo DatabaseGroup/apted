@@ -207,13 +207,6 @@ public class NodeIndexer<D, C extends CostModel> {
    */
   private int currentNode;
 
-  /**
-   * Stores the information if the original order of the input trees has been
-   * swapped when passing as attributes to the single-path function
-   * [1, Section 3.4].
-   */
-  private boolean switched;
-
   // Structure single-value variables.
 
   /**
@@ -269,6 +262,8 @@ public class NodeIndexer<D, C extends CostModel> {
    * from APTED algorithm.
    *
    * @param inputTree an input tree to APTED. Its nodes will be indexed.
+   * @param costModel instance of a cost model to compute preL_to_sumDelCost
+   *                  and preL_to_sumInsCost.
    */
   public NodeIndexer(Node<D> inputTree, C costModel) {
     // Initialise variables.
@@ -278,7 +273,6 @@ public class NodeIndexer<D, C extends CostModel> {
     revkrSizesSumTmp = 0;
     preorderTmp = 0;
     currentNode = 0;
-    switched = false;
     treeSize = inputTree.getNodeCount();
 
     // Initialise indices with the lengths equal to the tree size.
@@ -559,27 +553,6 @@ public class NodeIndexer<D, C extends CostModel> {
       ints[i++] = n.intValue();
     }
     return ints;
-  }
-
-  /**
-   * Stores the information if the original order of the input trees has been
-   * swapped when passing as attributes to the single-path function
-   * [1, Section 3.4].
-   *
-   * @param value {@code true} if trees are switched and {@code false}
-   * otherwise.
-   */
-  public void setSwitched(boolean value) {
-    switched = value;
-  }
-
-  /**
-   * Verifies if the input trees have been swapped when passing as attributes
-   * to the single-path function [1, Section 3.4].
-   * @return {@code true} if trees are swapped, {@code false} otherwise.
-   */
-  public boolean isSwitched() {
-    return switched;
   }
 
   /**

@@ -115,15 +115,17 @@ public class APTED<C extends CostModel, D> {
   /**
    * Array used in the algorithm before [1]. Using it does not change the
    * complexity.
+   *
+   * <p>TODO: Do not use it [1, Section 8.4].
    */
-  // TODO: Do not use it [1, Section 8.4].
   private int fn[];
 
   /**
    * Array used in the algorithm before [1]. Using it does not change the
    * complexity.
+   *
+   * <p>TODO: Do not use it [1, Section 8.4].
    */
-  // TODO: Do not use it [1, Section 8.4].
   private int ft[];
 
   /**
@@ -690,6 +692,9 @@ public class APTED<C extends CostModel, D> {
    * Implements spf1 single path function for the case when one of the subtrees
    * is a single node [2, Section 6.1, Algorithm 2].
    *
+   * <p>In this method we don't have to verify if input subtrees have been
+   * swapped because they're always passed in the original input order.
+   *
    * @param ni1 node indexer for the source input subtree.
    * @param ni2 node indexer for the destination input subtree.
    * @param subtreeRootNode1 root node of a subtree in the source input tree.
@@ -738,6 +743,10 @@ public class APTED<C extends CostModel, D> {
     return -1;
   }
 
+  // BUG In case of non-symmetric deletion/insertion costs and subtrees swapped
+  //     compared to original input, the implementation is erroneous. Deletion
+  //     and insertion costs should be swapped in that case.
+
   /**
    * Implements GTED algorithm [1, Section 3.4].
    *
@@ -778,17 +787,20 @@ public class APTED<C extends CostModel, D> {
         }
         currentPathNode = parent;
       }
+      // TODO: Move this property away from node indexer and pass directly to spfs.
       it1.setCurrentNode(currentSubtree1);
-      it1.setSwitched(false);
-      it2.setSwitched(false);
 
+      // Pass to spfs a boolean that says says if the order of input subtrees
+      // has been swapped compared to the order of the initial input trees.
+      // Used for accessing delta array and deciding on the edit operation
+      // [1, Section 3.4].
       if (strategyPathType == 0) {
-        return spfL(it1, it2);
+        return spfL(it1, it2, false);
       }
       if (strategyPathType == 1) {
-        return spfR(it1, it2);
+        return spfR(it1, it2, false);
       }
-      return spfA(it1, it2, Math.abs(strategyPathID) - 1, strategyPathType);
+      return spfA(it1, it2, Math.abs(strategyPathID) - 1, strategyPathType, false);
     }
 
     currentPathNode -= pathIDOffset;
@@ -805,17 +817,20 @@ public class APTED<C extends CostModel, D> {
       }
       currentPathNode = parent;
     }
+    // TODO: Move this property away from node indexer and pass directly to spfs.
     it2.setCurrentNode(currentSubtree2);
-    it1.setSwitched(true);
-    it2.setSwitched(true);
 
+    // Pass to spfs a boolean that says says if the order of input subtrees
+    // has been swapped compared to the order of the initial input trees. Used
+    // for accessing delta array and deciding on the edit operation
+    // [1, Section 3.4].
     if (strategyPathType == 0) {
-      return spfL(it2, it1);
+      return spfL(it2, it1, true);
     }
     if (strategyPathType == 1) {
-      return spfR(it2, it1);
+      return spfR(it2, it1, true);
     }
-    return spfA(it2, it1, Math.abs(strategyPathID) - pathIDOffset - 1, strategyPathType);
+    return spfA(it2, it1, Math.abs(strategyPathID) - pathIDOffset - 1, strategyPathType, true);
   }
 
   /**
@@ -828,14 +843,17 @@ public class APTED<C extends CostModel, D> {
    * @param it2 node indexer of the right-hand input subtree.
    * @param pathID the left-to-right preorder id of the strategy path's leaf node.
    * @param pathType type of the strategy path (LEFT, RIGHT, INNER).
+   * @param treesSwapped says if the order of input subtrees has been swapped
+   *                     compared to the order of the initial input trees. Used
+   *                     for accessing delta array and deciding on the edit
+   *                     operation.
    * @return tree edit distance between left-hand and right-hand input subtrees.
    */
   // TODO: Document the internals. Point to lines of the algorithm.
   // The implementation has been micro-tuned: variables initialised once,
   // pointers to arrays precomputed and fixed for entire lower-level loops,
   // parts of lower-level loops that don't change moved to upper-level loops.
-  private float spfA(NodeIndexer it1, NodeIndexer it2, int pathID, byte pathType) {
-    boolean treesSwitched = it1.isSwitched();
+  private float spfA(NodeIndexer it1, NodeIndexer it2, int pathID, byte pathType, boolean treesSwapped) {
     Node<D>[] it2nodes = it2.preL_to_node;
     Node<D> lFNode;
     int[] it1sizes = it1.sizes;
@@ -971,7 +989,7 @@ public class APTED<C extends CostModel, D> {
             sp1spointer = s[(lF + 1) - it1PreLoff];
             sp2spointer = s[lF - it1PreLoff];
             sp3spointer = s[0];
-            sp3deltapointer = treesSwitched ? null : delta[lF];
+            sp3deltapointer = treesSwapped ? null : delta[lF];
             swritepointer = s[lF - it1PreLoff];
             sp1source = 1; // Search sp1 value in s array by default.
             sp3source = 1; // Search second part of sp3 value in s array by default.
@@ -1021,7 +1039,7 @@ public class APTED<C extends CostModel, D> {
             // sp2 -- END
             // sp3 -- START
             if (sp3 < minCost) {
-              sp3 += treesSwitched ? delta[lG][lF] : sp3deltapointer[lG];
+              sp3 += treesSwapped ? delta[lG][lF] : sp3deltapointer[lG];
               if (sp3 < minCost) {
                 sp3 += costModel.ren(lFNode, it2nodes[lG]); // USE COST MODEL - Rename the leftmost root nodes in F_{lF,rF} and G_{lG,rG}.
                 if(sp3 < minCost) {
@@ -1049,7 +1067,7 @@ public class APTED<C extends CostModel, D> {
               if(sp2 < minCost) {
                 minCost = sp2;
               }
-              sp3 = treesSwitched ? delta[lG][lF] : sp3deltapointer[lG];
+              sp3 = treesSwapped ? delta[lG][lF] : sp3deltapointer[lG];
               if (sp3 < minCost) {
                 switch(sp3source) {
                     case 1: sp3 += sp3spointer[fn[(lG + it2sizes[lG]) - 1] - it2PreLoff]; break;
@@ -1071,14 +1089,14 @@ public class APTED<C extends CostModel, D> {
           if (rGminus1_in_preL == parent_of_rG_in_preL) {
             if (!rightPart) {
               if (leftPart) {
-                if (treesSwitched) {
+                if (treesSwapped) {
                   delta[parent_of_rG_in_preL][endPathNode] = s[(lFlast + 1) - it1PreLoff][(rGminus1_in_preL + 1) - it2PreLoff];
                 } else {
                   delta[endPathNode][parent_of_rG_in_preL] = s[(lFlast + 1) - it1PreLoff][(rGminus1_in_preL + 1) - it2PreLoff];
                 }
               }
               if (endPathNode > 0 && endPathNode == parent_of_endPathNode + 1 && endPathNode_in_preR == parent_of_endPathNode_in_preR + 1) {
-                if (treesSwitched) {
+                if (treesSwapped) {
                   delta[parent_of_rG_in_preL][parent_of_endPathNode] = s[lFlast - it1PreLoff][(rGminus1_in_preL + 1) - it2PreLoff];
                 } else {
                   delta[parent_of_endPathNode][parent_of_rG_in_preL] = s[lFlast - it1PreLoff][(rGminus1_in_preL + 1) - it2PreLoff];
@@ -1164,7 +1182,7 @@ public class APTED<C extends CostModel, D> {
             sp1spointer = s[(rF + 1) - it1PreRoff];
             sp2spointer = s[rF - it1PreRoff];
             sp3spointer = s[0];
-            sp3deltapointer = treesSwitched ? null : delta[rF_in_preL];
+            sp3deltapointer = treesSwapped ? null : delta[rF_in_preL];
             swritepointer = s[rF - it1PreRoff];
             sp1tpointer = t[lG - it2PreLoff];
             sp3tpointer = t[lG - it2PreLoff];
@@ -1210,7 +1228,7 @@ public class APTED<C extends CostModel, D> {
               minCost = sp2;
             }
             if (sp3 < minCost) {
-              sp3 += treesSwitched ? delta[rGfirst_in_preL][rF_in_preL] : sp3deltapointer[rGfirst_in_preL];
+              sp3 += treesSwapped ? delta[rGfirst_in_preL][rF_in_preL] : sp3deltapointer[rGfirst_in_preL];
               if (sp3 < minCost) {
                 sp3 += costModel.ren(rFNode, it2nodes[rGfirst_in_preL]);
                 if (sp3 < minCost) {
@@ -1237,7 +1255,7 @@ public class APTED<C extends CostModel, D> {
               if (sp2 < minCost) {
                 minCost = sp2;
               }
-              sp3 = treesSwitched ? delta[rG_in_preL][rF_in_preL] : sp3deltapointer[rG_in_preL];
+              sp3 = treesSwapped ? delta[rG_in_preL][rF_in_preL] : sp3deltapointer[rG_in_preL];
               if (sp3 < minCost) {
                 switch (sp3source) {
                   case 1: sp3 += sp3spointer[fn[(rG + it2sizes[rG_in_preL]) - 1] - it2PreRoff]; break;
@@ -1258,14 +1276,14 @@ public class APTED<C extends CostModel, D> {
           }
           if (lG > currentSubtreePreL2 && lG - 1 == parent_of_lG) {
             if (rightPart) {
-              if (treesSwitched) {
+              if (treesSwapped) {
                 delta[parent_of_lG][endPathNode] = s[(rFlast + 1) - it1PreRoff][(lGminus1_in_preR + 1) - it2PreRoff];
               } else {
                 delta[endPathNode][parent_of_lG] = s[(rFlast + 1) - it1PreRoff][(lGminus1_in_preR + 1) - it2PreRoff];
               }
             }
             if (endPathNode > 0 && endPathNode == parent_of_endPathNode + 1 && endPathNode_in_preR == parent_of_endPathNode_in_preR + 1)
-              if (treesSwitched) {
+              if (treesSwapped) {
                 delta[parent_of_lG][parent_of_endPathNode] = s[rFlast - it1PreRoff][(lGminus1_in_preR + 1) - it2PreRoff];
               } else {
                 delta[parent_of_endPathNode][parent_of_lG] = s[rFlast - it1PreRoff][(lGminus1_in_preR + 1) - it2PreRoff];
@@ -1296,9 +1314,13 @@ public class APTED<C extends CostModel, D> {
    *
    * @param it1 node indexer of the left-hand input subtree.
    * @param it2 node indexer of the right-hand input subtree.
+   * @param treesSwapped says if the order of input subtrees has been swapped
+   *                     compared to the order of the initial input trees. Used
+   *                     for accessing delta array and deciding on the edit
+   *                     operation.
    * @return tree edit distance between left-hand and right-hand input subtrees.
    */
-  private float spfL(NodeIndexer it1, NodeIndexer it2) {
+  private float spfL(NodeIndexer it1, NodeIndexer it2, boolean treesSwapped) {
     // Initialise the array to store the keyroot nodes in the right-hand input
     // subtree.
     int[] keyRoots = new int[it2.sizes[it2.getCurrentNode()]];
@@ -1317,7 +1339,7 @@ public class APTED<C extends CostModel, D> {
     // between the left-hand input subtree and all keyroot nodes in the
     // right-hand input subtree.
     for (int i = firstKeyRoot-1; i >= 0; i--) {
-      treeEditDist(it1, it2, it1.getCurrentNode(), keyRoots[i], forestdist);
+      treeEditDist(it1, it2, it1.getCurrentNode(), keyRoots[i], forestdist, treesSwapped);
     }
     // Return the distance between the input subtrees.
     return forestdist[it1.sizes[it1.getCurrentNode()]][it2.sizes[it2.getCurrentNode()]];
@@ -1332,6 +1354,7 @@ public class APTED<C extends CostModel, D> {
    * @param pathID left-to-right preorder id of the leftmost leaf node of subtreeRootNode.
    * @param keyRoots array that stores all key roots in the order of their left-to-right preorder ids.
    * @param index the index of keyRoots array where to store the next keyroot node.
+   * @return the index of the first keyroot node to process.
    */
   // TODO: Merge with computeRevKeyRoots - the only difference is between leftmost and rightmost leaf.
   private int computeKeyRoots(NodeIndexer it2, int subtreeRootNode, int pathID, int[] keyRoots, int index) {
@@ -1362,11 +1385,17 @@ public class APTED<C extends CostModel, D> {
    *
    * @param it1 node indexer of the left-hand input subtree.
    * @param it2 node indexer of the right-hand input subtree.
-   * @param it1subtree left-to-right preorder id of the root node of the left-hand input subtree.
-   * @param it2subtree left-to-right preorder id of the root node of the right-hand input subtree.
+   * @param it1subtree left-to-right preorder id of the root node of the
+   *                   left-hand input subtree.
+   * @param it2subtree left-to-right preorder id of the root node of the
+   *                   right-hand input subtree.
    * @param forestdist the array to be filled in with intermediate distances of subforest pairs.
+   * @param treesSwapped says if the order of input subtrees has been swapped
+   *                     compared to the order of the initial input trees. Used
+   *                     for accessing delta array and deciding on the edit
+   *                     operation.
    */
-  private void treeEditDist(NodeIndexer it1, NodeIndexer it2, int it1subtree, int it2subtree, float[][] forestdist) {
+  private void treeEditDist(NodeIndexer it1, NodeIndexer it2, int it1subtree, int it2subtree, float[][] forestdist, boolean treesSwapped) {
     // Translate input subtree root nodes to left-to-right postorder.
     int i = it1.preL_to_postL[it1subtree];
     int j = it2.preL_to_postL[it2subtree];
@@ -1381,9 +1410,6 @@ public class APTED<C extends CostModel, D> {
     float da = 0;
     float db = 0;
     float dc = 0;
-    // Verify if the order of input subtrees has been swapped compared to the
-    // order of the initial input trees. Used for accessing delta array.
-    boolean switched = it1.isSwitched();
     // Initialize forestdist array with deletion and insertion costs of each
     // relevant subforest.
     forestdist[0][0] = 0;
@@ -1406,14 +1432,14 @@ public class APTED<C extends CostModel, D> {
         if (it1.postL_to_lld[i1 + ioff] == it1.postL_to_lld[i] && it2.postL_to_lld[j1 + joff] == it2.postL_to_lld[j]) {
           dc = forestdist[i1 - 1][j1 - 1] + u;
           // Store the relevant distance value in delta array.
-          if (switched) {
+          if (treesSwapped) {
             delta[it2.postL_to_preL[j1 + joff]][it1.postL_to_preL[i1 + ioff]] = forestdist[i1 - 1][j1 - 1];
           } else {
             delta[it1.postL_to_preL[i1 + ioff]][it2.postL_to_preL[j1 + joff]] = forestdist[i1 - 1][j1 - 1];
           }
         } else {
           dc = forestdist[it1.postL_to_lld[i1 + ioff] - 1 - ioff][it2.postL_to_lld[j1 + joff] - 1 - joff] +
-            (switched ? delta[it2.postL_to_preL[j1 + joff]][it1.postL_to_preL[i1 + ioff]] : delta[it1.postL_to_preL[i1 + ioff]][it2.postL_to_preL[j1 + joff]]) + u;
+            (treesSwapped ? delta[it2.postL_to_preL[j1 + joff]][it1.postL_to_preL[i1 + ioff]] : delta[it1.postL_to_preL[i1 + ioff]][it2.postL_to_preL[j1 + joff]]) + u;
         }
         // Calculate final minimum.
         forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
@@ -1431,9 +1457,13 @@ public class APTED<C extends CostModel, D> {
    *
    * @param it1 node indexer of the left-hand input subtree.
    * @param it2 node indexer of the right-hand input subtree.
+   * @param treesSwapped says if the order of input subtrees has been swapped
+   *                     compared to the order of the initial input trees. Used
+   *                     for accessing delta array and deciding on the edit
+   *                     operation.
    * @return tree edit distance between left-hand and right-hand input subtrees.
    */
-  private float spfR(NodeIndexer it1, NodeIndexer it2) {
+  private float spfR(NodeIndexer it1, NodeIndexer it2, boolean treesSwapped) {
     // Initialise the array to store the keyroot nodes in the right-hand input
     // subtree.
     int[] revKeyRoots = new int[it2.sizes[it2.getCurrentNode()]];
@@ -1452,7 +1482,7 @@ public class APTED<C extends CostModel, D> {
     // between the left-hand input subtree and all keyroot nodes in the
     // right-hand input subtree.
     for (int i = firstKeyRoot-1; i >= 0; i--) {
-      revTreeEditDist(it1, it2, it1.getCurrentNode(), revKeyRoots[i], forestdist);
+      revTreeEditDist(it1, it2, it1.getCurrentNode(), revKeyRoots[i], forestdist, treesSwapped);
     }
     // Return the distance between the input subtrees.
     return forestdist[it1.sizes[it1.getCurrentNode()]][it2.sizes[it2.getCurrentNode()]];
@@ -1467,6 +1497,7 @@ public class APTED<C extends CostModel, D> {
    * @param pathID left-to-right preorder id of the rightmost leaf node of subtreeRootNode.
    * @param revKeyRoots array that stores all key roots in the order of their left-to-right preorder ids.
    * @param index the index of keyRoots array where to store the next keyroot node.
+   * @return the index of the first keyroot node to process.
    */
   private int computeRevKeyRoots(NodeIndexer it2, int subtreeRootNode, int pathID, int[] revKeyRoots, int index) {
     // The subtreeRootNode is a keyroot node. Add it to keyRoots.
@@ -1496,11 +1527,18 @@ public class APTED<C extends CostModel, D> {
    *
    * @param it1 node indexer of the left-hand input subtree.
    * @param it2 node indexer of the right-hand input subtree.
-   * @param it1subtree left-to-right preorder id of the root node of the left-hand input subtree.
-   * @param it2subtree left-to-right preorder id of the root node of the right-hand input subtree.
-   * @param forestdist the array to be filled in with intermediate distances of subforest pairs.
+   * @param it1subtree left-to-right preorder id of the root node of the
+   *                   left-hand input subtree.
+   * @param it2subtree left-to-right preorder id of the root node of the
+   *                   right-hand input subtree.
+   * @param forestdist the array to be filled in with intermediate distances of
+   *                   subforest pairs.
+   * @param treesSwapped says if the order of input subtrees has been swapped
+   *                     compared to the order of the initial input trees. Used
+   *                     for accessing delta array and deciding on the edit
+   *                     operation.
    */
-  private void revTreeEditDist(NodeIndexer it1, NodeIndexer it2, int it1subtree, int it2subtree, float[][] forestdist) {
+  private void revTreeEditDist(NodeIndexer it1, NodeIndexer it2, int it1subtree, int it2subtree, float[][] forestdist, boolean treesSwapped) {
     // Translate input subtree root nodes to right-to-left postorder.
     int i = it1.preL_to_postR[it1subtree];
     int j = it2.preL_to_postR[it2subtree];
@@ -1515,9 +1553,6 @@ public class APTED<C extends CostModel, D> {
     float da = 0;
     float db = 0;
     float dc = 0;
-    // Verify if the order of input subtrees has been swapped compared to the
-    // order of the initial input trees. Used for accessing delta array.
-    boolean switched = it1.isSwitched();
     // Initialize forestdist array with deletion and insertion costs of each
     // relevant subforest.
     forestdist[0][0] = 0;
@@ -1540,14 +1575,14 @@ public class APTED<C extends CostModel, D> {
         if (it1.postR_to_rld[i1 + ioff] == it1.postR_to_rld[i] && it2.postR_to_rld[j1 + joff] == it2.postR_to_rld[j]) {
           dc = forestdist[i1 - 1][j1 - 1] + u;
           // Store the relevant distance value in delta array.
-          if (switched) {
+          if (treesSwapped) {
             delta[it2.postR_to_preL[j1+joff]][it1.postR_to_preL[i1+ioff]] = forestdist[i1 - 1][j1 - 1];
           } else {
             delta[it1.postR_to_preL[i1+ioff]][it2.postR_to_preL[j1+joff]] = forestdist[i1 - 1][j1 - 1];
           }
         } else {
           dc = forestdist[it1.postR_to_rld[i1 + ioff] - 1 - ioff][it2.postR_to_rld[j1 + joff] - 1 - joff] +
-            (switched ? delta[it2.postR_to_preL[j1 + joff]][it1.postR_to_preL[i1 + ioff]] : delta[it1.postR_to_preL[i1 + ioff]][it2.postR_to_preL[j1 + joff]]) + u;
+            (treesSwapped ? delta[it2.postR_to_preL[j1 + joff]][it1.postR_to_preL[i1 + ioff]] : delta[it1.postR_to_preL[i1 + ioff]][it2.postR_to_preL[j1 + joff]]) + u;
         }
         // Calculate final minimum.
         forestdist[i1][j1] = da >= db ? db >= dc ? dc : db : da >= dc ? dc : da;
@@ -1583,8 +1618,13 @@ public class APTED<C extends CostModel, D> {
   /**
    * fn array used in the algorithm before [1]. Using it does not change the
    * complexity.
+   *
+   * <p>TODO: Do not use it [1, Section 8.4].
+   *
+   * @param lnForNode ---
+   * @param node ---
+   * @param currentSubtreePreL ---
    */
-  // TODO: Do not use it [1, Section 8.4].
   private void updateFnArray(int lnForNode, int node, int currentSubtreePreL) {
     if (lnForNode >= currentSubtreePreL) {
       fn[node] = fn[lnForNode];
@@ -1598,8 +1638,12 @@ public class APTED<C extends CostModel, D> {
   /**
    * ft array used in the algorithm before [1]. Using it does not change the
    * complexity.
+   *
+   * <p>TODO: Do not use it [1, Section 8.4].
+   *
+   * @param lnForNode ---
+   * @param node ---
    */
-  // TODO: Do not use it [1, Section 8.4].
   private void updateFtArray(int lnForNode, int node) {
     ft[node] = lnForNode;
     if(fn[node] > -1) {
