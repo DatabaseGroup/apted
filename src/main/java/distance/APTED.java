@@ -28,9 +28,7 @@ import java.util.LinkedList;
 import java.util.Stack;
 import node.Node;
 import node.NodeIndexer;
-import node.StringNodeData;
 import costmodel.CostModel;
-import costmodel.StringUnitCostModel;
 
 /**
  * Implements APTED algorithm [1,2].
@@ -109,7 +107,7 @@ public class APTED<C extends CostModel, D> {
    * One of distance arrays to store intermediate distances in spfA.
    */
   // TODO: Verify if other spf-local arrays are initialised within spf. If yes,
-  //       move q to spf to.
+  //       move q to spf to - then, an offset has to be used to access it.
   private float q[];
 
   /**
@@ -1760,7 +1758,7 @@ public class APTED<C extends CostModel, D> {
       for (int dj = ted2.postL_to_lld[j-1]+1; dj <= j; dj++) {
         forestdist[ted1.postL_to_lld[i-1]][dj] = forestdist[ted1.postL_to_lld[i-1]][dj - 1] + costModel.ins(ted2.postL_to_node(dj-1));
         float costRen = costModel.ren(ted1.postL_to_node(di-1), ted2.postL_to_node(dj-1));
-        // TODO: The first to elements of the minimum can be computed here,
+        // TODO: The first two elements of the minimum can be computed here,
         //       similarly to spfL and spfR.
         if ((ted1.postL_to_lld[di-1] == ted1.postL_to_lld[i-1]) && (ted2.postL_to_lld[dj-1] == ted2.postL_to_lld[j-1])) {
           forestdist[di][dj] = Math.min(Math.min(
