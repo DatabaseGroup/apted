@@ -25,6 +25,7 @@ package distance;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import node.Node;
 import node.NodeIndexer;
 import costmodel.CostModel;
@@ -60,24 +61,38 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
    */
   private C costModel;
 
+  /**
+   * TODO: Document it.
+   */
   public AllPossibleMappingsTED(C costModel) {
     this.costModel = costModel;
   }
 
+  /**
+   * TODO: Document it.
+   */
   public float computeEditDistance(Node<D> t1, Node<D> t2) {
     // Index the nodes of both input trees.
     init(t1, t2);
     ArrayList<ArrayList<int[]>> mappings = generate_all_one_to_one_mappings();
     System.out.println(mappingsToString(mappings));
-    return -1;
+    removeNonTEDMappings(mappings);
+    System.out.println(mappingsToString(mappings));
+    return get_min_cost(mappings);
   }
 
+  /**
+   * TODO: Document it.
+   */
   public void init(Node<D> t1, Node<D> t2) {
     it1 = new NodeIndexer(t1, costModel);
     it2 = new NodeIndexer(t2, costModel);
     size1 = it1.getSize();
     size2 = it2.getSize();
   }
+
+  // TODO: Document it.
+  // TODO: Rename all names to Java formatting guidelines.
 
   /**
    * Generate all possible 1-1 mappings.
@@ -103,7 +118,6 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
     for (int n2 = 0; n2 < size2; n2++) {
       mappings.get(0).add(new int[]{-1, n2});
     }
-    // mappings.get(0).add(new int[]());
     System.out.println(mappings.size());
     System.out.println(mappings.get(0).size());
     // For each node in the source tree.
@@ -153,6 +167,102 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
     return mappings;
   }
 
+  /**
+   * Given all 1-1 mappings, discard these that violate TED conditions.
+   *
+   * it1, it2 -- info tree objects
+   * mappings -- all 1-1 mappings
+   */
+  private void removeNonTEDMappings(ArrayList<ArrayList<int[]>> mappings) {
+    // Validate each mapping separately.
+    // Iterator safely removes mappings while iterating.
+    for (Iterator<ArrayList<int[]>> mit = mappings.iterator(); mit.hasNext();) {
+      ArrayList<int[]> m = mit.next();
+      if (!isTEDMapping(m)) {
+        mit.remove();
+      }
+    }
+  }
+
+  /**
+   * Test if a 1-1 mapping is a TED mapping.
+   *
+   * it1, it2 -- info tree objects
+   * m        -- 1-1 mapping
+   */
+  boolean isTEDMapping(ArrayList<int[]> m) {
+    // Validate each pair of pairs of mapped nodes in the mapping.
+    for (int[] e1 : m) {
+      // Use only pairs of mapped nodes for validation.
+      if (e1[0] == -1 || e1[1] == -1) {
+        continue;
+      }
+      for (int[] e2 : m) {
+        // Use only pairs of mapped nodes for validation.
+        if (e2[0] == -1 || e2[1] == -1) {
+          continue;
+        }
+        // If any of the conditions below doesn't hold, discard m.
+        // Validate ancestor-descendant condition.
+        boolean a = e1[0] < e2[0] && it1.preL_to_preR[e1[0]] < it1.preL_to_preR[e2[0]];
+        boolean b = e1[1] < e2[1] && it2.preL_to_preR[e1[1]] < it2.preL_to_preR[e2[1]];
+        if ((a && !b) || (!a && b)) {
+          // Discard the mapping.
+          // If this condition doesn't hold, the next condition
+          // doesn't have to be verified any more and any other
+          // pair (e1, e2) doesn't have to be verified any more.
+          return false;
+        }
+        // Validate sibling-order condition.
+        a = e1[0] < e2[0] && it1.preL_to_preR[e1[0]] > it1.preL_to_preR[e2[0]];
+        b = e1[1] < e2[1] && it2.preL_to_preR[e1[1]] > it2.preL_to_preR[e2[1]];
+        if ((a && !b) || (!a && b)) {
+          // Discard the mapping.
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Given list of all TED mappings, calculate the minimal cost.
+   *
+   * it1, it2         -- info tree objects
+   * ted_mappings     -- set of all ted_mappings between some two forests
+   * f1_size, f2_size -- sizes of two forests for which ted_mappings are given
+   */
+  float get_min_cost(ArrayList<ArrayList<int[]>> tedMappings) {
+    // Initialize min_cost to the upper bound.
+    float min_cost = size1 + size2;
+    // Verify cost of each mapping.
+    for (ArrayList<int[]> m : tedMappings) {
+      float m_cost = 0;
+      // Sum up edit costs for all elements in the mapping m.
+      for (int[] e : m) {
+        // Add edit operation cost.
+        if (e[0] > -1 && e[1] > -1) {
+          m_cost += costModel.ren(it1.preL_to_node[e[0]], it2.preL_to_node[e[1]]); // USE COST MODEL - rename e[0] to e[1].
+        } else if (e[0] > -1) {
+          m_cost += costModel.del(it1.preL_to_node[e[0]]); // USE COST MODEL - insert e[1].
+        } else {
+          m_cost += costModel.ins(it2.preL_to_node[e[1]]); // USE COST MODEL - delete e[0].
+        }
+        // Break as soon as the current min_cost is exceeded.
+        // Only for early loop break.
+        if (m_cost >= min_cost) {
+          break;
+        }
+      }
+      // Store the minimal cost - compare m_cost and min_cost
+      min_cost = min_cost < m_cost ? min_cost : m_cost;
+    }
+    return min_cost;
+  }
+
+  /**
+   * TODO: Document it.
+   */
   private ArrayList<int[]> deepMappingCopy(ArrayList<int[]> mapping) {
     ArrayList<int[]> mapping_copy = new ArrayList<int[]>(mapping.size());
     for (int[] me : mapping) { // for each mapping element in a mapping
@@ -161,6 +271,9 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
     return mapping_copy;
   }
 
+  /**
+   * TODO: Document it.
+   */
   private ArrayList<ArrayList<int[]>> deepMappingsCopy(ArrayList<ArrayList<int[]>> mappings) {
     ArrayList<ArrayList<int[]>> mappings_copy = new ArrayList<ArrayList<int[]>>(mappings.size());
     for (ArrayList<int[]> m : mappings) { // for each mapping in mappings
@@ -173,6 +286,9 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
     return mappings_copy;
   }
 
+  /**
+   * TODO: Document it.
+   */
   private String mappingsToString(ArrayList<ArrayList<int[]>> mappings) {
     String result = "Mappings:\n";
     for (ArrayList<int[]> m : mappings) {
@@ -185,6 +301,9 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
     return result;
   }
 
+  /**
+   * TODO: Document it.
+   */
   private boolean removeMappingElement(ArrayList<int[]> m, int[] e) {
     for (int[] me : m) {
       if (me[0] == e[0] && me[1] == e[1]) {
