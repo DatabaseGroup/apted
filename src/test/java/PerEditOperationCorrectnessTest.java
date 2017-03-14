@@ -49,7 +49,7 @@ import costmodel.PerEditOperationStringNodeDataCostModel;
  * @see costmodel.PerEditOperationStringNodeDataCostModel
  */
 @RunWith(Parameterized.class)
-public class ArbitraryCostModelCorrectnessTest {
+public class PerEditOperationCorrectnessTest {
 
   /**
    * Test case object holding parameters of a single test case.
@@ -140,7 +140,7 @@ public class ArbitraryCostModelCorrectnessTest {
    *
    * @param testCase single test case.
    */
-  public ArbitraryCostModelCorrectnessTest(TestCase testCase) {
+  public PerEditOperationCorrectnessTest(TestCase testCase) {
     this.testCase = testCase;
   }
 
