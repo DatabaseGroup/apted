@@ -196,7 +196,16 @@ public class NodeIndexer<D, C extends CostModel> {
    */
   public int preL_to_desc_sum[];
 
+  /**
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the cost of deleting all nodes in the subtree rooted at n.
+   */
   public float preL_to_sumDelCost[];
+
+  /**
+   * Index from left-to-right preorder id of node n (starting with {@code 0})
+   * to the cost of inserting all nodes in the subtree rooted at n.
+   */
   public float preL_to_sumInsCost[];
 
   // Variables holding values modified at runtime while the algorithm executes.
