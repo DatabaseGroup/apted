@@ -80,10 +80,11 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
 
   /**
    * Computes the tree edit distance between two trees by trying all possible
-   * TED mappings.
+   * TED mappings. It uses the specified cost model.
    *
    * @param t1 source tree.
    * @param t2 destination tree.
+   * @return the tree edit distance between two trees.
    */
   public float computeEditDistance(Node<D> t1, Node<D> t2) {
     // Index the nodes of both input trees.
@@ -302,7 +303,7 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
   /**
    * Constructs a string representation of a set of mappings.
    *
-   * @param mappings
+   * @param mappings set of mappings to convert.
    * @return string representation of a set of mappings.
    */
   private String mappingsToString(ArrayList<ArrayList<int[]>> mappings) {
@@ -323,7 +324,8 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
    *
    * @param m an edit mapping.
    * @param e element to remove from {@code m}.
-   * @return {@code true} if {@code e} has been removed, and {@false} otherwise.
+   * @return {@code true} if {@code e} has been removed, and {@code false}
+   *         otherwise.
    */
   private boolean removeMappingElement(ArrayList<int[]> m, int[] e) {
     for (int[] me : m) {
