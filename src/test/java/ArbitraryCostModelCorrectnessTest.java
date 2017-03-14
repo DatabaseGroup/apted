@@ -39,35 +39,17 @@ import distance.AllPossibleMappingsTED;
 import parser.BracketStringInputParser;
 import node.Node;
 import node.StringNodeData;
-import costmodel.StringUnitCostModel;
+import costmodel.PerEditOperationStringNodeDataCostModel;
 
 /**
- * Correctness unit tests of distance and mapping computation.
+ * Correctness unit tests of distance computation for node labels with a single
+ * string value and per-edit-operation cost model.
  *
- * <p>In case of mapping, only mapping cost is verified against the correct
- * distance.
- *
- * <p>Currently tests only for unit-cost model and single string-value labels.
- *
- * @see StringNodeData
- * @see StringUnitCostModel
+ * @see node.StringNodeData
+ * @see costmodel.PerEditOperationStringNodeDataCostModel
  */
 @RunWith(Parameterized.class)
 public class ArbitraryCostModelCorrectnessTest {
-
-  /**
-   * Path to JSON file with test cases. Currently only unit cost for single
-   * string-value labels.
-   */
-  private static final String CORRECTNESS_TESTS_PATH = "mini.json";
-
-  /**
-   * APTED algorithm initialized only once for all test cases. Currently only
-   * unit-cost test cases are implemented.
-   */
-  private APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
-
-  private AllPossibleMappingsTED<StringUnitCostModel, StringNodeData> apmted = new AllPossibleMappingsTED<>(new StringUnitCostModel());
 
   /**
    * Test case object holding parameters of a single test case.
@@ -175,7 +157,7 @@ public class ArbitraryCostModelCorrectnessTest {
    */
   @Parameters(name = "{0}")
   public static Collection data() throws IOException {
-    BufferedReader br = new BufferedReader(new FileReader(CorrectnessTest.class.getResource("/"+CORRECTNESS_TESTS_PATH).getPath()));
+    BufferedReader br = new BufferedReader(new FileReader(CorrectnessTest.class.getResource("/mini.json").getPath()));
     Gson gson = new Gson();
     TestCase[] testCases = new Gson().fromJson(br, TestCase[].class);
     return Arrays.asList(testCases);
@@ -183,20 +165,29 @@ public class ArbitraryCostModelCorrectnessTest {
 
   /**
    * Compute TED for a single test case and compare to the correct value. Uses
-   * node labels with a single string value and unit cost model.
+   * node labels with a single string value and per-edit-operation cost model.
+   *
+   * <p>The correct value is calculated using AllPossibleMappingsTED algorithm.
+   * <p>The costs of edit operations are set to some example values different
+   * than in the unit cost model.
    *
    * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
+   * @see costmodel.PerEditOperationStringNodeDataCostModel
+   * @see distance.AllPossibleMappingsTED
    */
   @Test
-  public void correctnessDistanceTestStringUnitCost() {
+  public void distancePerEditOperationStringNodeDataCostModel() {
+    // Parse the input.
     BracketStringInputParser parser = new BracketStringInputParser();
     Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
     Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
-    // This cast is safe due to unit cost.
-    int result = (int)apted.computeEditDistance(t1, t2);
-    int correctResult = (int)apmted.computeEditDistance(t1, t2);
-    assertEquals(correctResult, result);
+    // Initialise algorithms.
+    APTED<PerEditOperationStringNodeDataCostModel, StringNodeData> apted = new APTED<>(new PerEditOperationStringNodeDataCostModel(0.4f, 0.4f, 0.6f));
+    AllPossibleMappingsTED<PerEditOperationStringNodeDataCostModel, StringNodeData> apmted = new AllPossibleMappingsTED<>(new PerEditOperationStringNodeDataCostModel(0.4f, 0.4f, 0.6f));
+    // Calculate distances using both algorithms.
+    float result = apted.computeEditDistance(t1, t2);
+    float correctResult = apmted.computeEditDistance(t1, t2);
+    assertEquals(correctResult, result, 0.0001);
   }
 
 }
