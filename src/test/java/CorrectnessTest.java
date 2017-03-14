@@ -55,20 +55,6 @@ import costmodel.StringUnitCostModel;
 public class CorrectnessTest {
 
   /**
-   * Path to JSON file with test cases. Currently only unit cost for single
-   * string-value labels.
-   */
-  private static final String CORRECTNESS_TESTS_PATH = "correctness_test_cases.json";
-
-  // IDEA: Write tests for other cost models.
-
-  /**
-   * APTED algorithm initialized only once for all test cases. Currently only
-   * unit-cost test cases are implemented.
-   */
-  private APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
-
-  /**
    * Test case object holding parameters of a single test case.
    *
    * <p>Could be also deserialized here but without much benefit.
@@ -174,7 +160,7 @@ public class CorrectnessTest {
    */
   @Parameters(name = "{0}")
   public static Collection data() throws IOException {
-    BufferedReader br = new BufferedReader(new FileReader(CorrectnessTest.class.getResource("/"+CORRECTNESS_TESTS_PATH).getPath()));
+    BufferedReader br = new BufferedReader(new FileReader(CorrectnessTest.class.getResource("/correctness_test_cases.json").getPath()));
     Gson gson = new Gson();
     TestCase[] testCases = new Gson().fromJson(br, TestCase[].class);
     return Arrays.asList(testCases);
@@ -185,7 +171,8 @@ public class CorrectnessTest {
    * to strings and verify equality with the input.
    */
   @Test
-  public void correctnessParsingTestBracketNotationToStringNodeData() {
+  public void parsingBracketNotationToStringNodeData() {
+    // Parse the input.
     BracketStringInputParser parser = new BracketStringInputParser();
     Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
     Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
@@ -201,30 +188,18 @@ public class CorrectnessTest {
    * @see costmodel.StringUnitCostModel
    */
   @Test
-  public void correctnessDistanceTestStringUnitCost() {
+  public void distanceUnitCostStringNodeDataCostModel() {
+    // Parse the input.
     BracketStringInputParser parser = new BracketStringInputParser();
     Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
     Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+    // Initialise APTED.
+    APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
     // This cast is safe due to unit cost.
     int result = (int)apted.computeEditDistance(t1, t2);
     assertEquals(testCase.getD(), result);
-  }
-
-  /**
-   * Compute TED for a single test case with swapped input trees and compare
-   * to the correct value. Uses node labels with a single string value and unit
-   * cost model.
-   *
-   * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
-   */
-  @Test
-  public void correctDistanceTestSymmetric() {
-    BracketStringInputParser parser = new BracketStringInputParser();
-    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
-    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
-    // This cast is safe due to unit cost. Input trees are swapped.
-    int result = (int)apted.computeEditDistance(t2, t1);
+    // Verify the symmetric case.
+    result = (int)apted.computeEditDistance(t2, t1);
     assertEquals(testCase.getD(), result);
   }
 
@@ -239,10 +214,13 @@ public class CorrectnessTest {
    * @see costmodel.StringUnitCostModel
    */
   @Test
-  public void correctnessDistanceTestStringUnitCost_spfL() {
+  public void distanceUnitCostStringNodeDataCostModelSpfL() {
+    // Parse the input.
     BracketStringInputParser parser = new BracketStringInputParser();
     Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
     Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+    // Initialise APTED.
+    APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
     // This cast is safe due to unit cost.
     int result = (int)apted.computeEditDistance_spfTest(t1, t2, 0);
     assertEquals(testCase.getD(), result);
@@ -259,10 +237,13 @@ public class CorrectnessTest {
    * @see costmodel.StringUnitCostModel
    */
   @Test
-  public void correctnessDistanceTestStringUnitCost_spfR() {
+  public void distanceUnitCostStringNodeDataCostModelSpfR() {
+    // Parse the input.
     BracketStringInputParser parser = new BracketStringInputParser();
     Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
     Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+    // Initialise APTED.
+    APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
     // This cast is safe due to unit cost.
     int result = (int)apted.computeEditDistance_spfTest(t1, t2, 1);
     assertEquals(testCase.getD(), result);
@@ -280,10 +261,13 @@ public class CorrectnessTest {
    * @see costmodel.StringUnitCostModel
    */
   @Test
-  public void correctMappingCostTest() {
+  public void mappingCostUnitCostStringNodeDataCostModel() {
+    // Parse the input.
     BracketStringInputParser parser = new BracketStringInputParser();
     Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
     Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+    // Initialise APTED.
+    APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
     // Although we don't need TED value yet, TED must be computed before the
     // mapping. This cast is safe due to unit cost.
     apted.computeEditDistance(t1, t2);
