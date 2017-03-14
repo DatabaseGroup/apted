@@ -29,6 +29,13 @@ import node.Node;
  * This interface specifies the methods to implement for a custom cost model.
  * The methods represent the costs of edit operations (delete, insert, rename).
  *
+ * <p>If the cost function is a metric, the tree edit distance is a metric too.
+ *
+ * <p>However, the cost function does not have to be a metric - the costs of
+ * deletion, insertion and rename can be arbitrary.
+ *
+ * <p>IMPORTANT: Mind the <b>float</b> type use for costs.
+ *
  * @param <D> type of node data on which the cost model is defined.
  */
 public interface CostModel<D> {
