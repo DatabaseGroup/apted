@@ -692,6 +692,10 @@ public class APTED<C extends CostModel, D> {
    * Implements spf1 single path function for the case when one of the subtrees
    * is a single node [2, Section 6.1, Algorithm 2].
    *
+   * <p>We allow an arbitrary cost model which in principle may allow renames to
+   * have a lower cost than the respective deletion plus insertion. Thus,
+   * Formula 4 in [2] has to be modified to account for that case.
+   *
    * <p>In this method we don't have to verify if input subtrees have been
    * swapped because they're always passed in the original input order.
    *
@@ -701,21 +705,26 @@ public class APTED<C extends CostModel, D> {
    * @param subtreeRootNode2 root node of a subtree in the destination input tree.
    * @return the tree edit distance between two subtrees of the source and destination input subtrees.
    */
-  // TODO: Merge this method with the initialisation loop in tedInit.
+  // TODO: Merge the initialisation loop in tedInit with this method.
   //       Currently, spf1 doesn't have to store distances in delta, because
   //       all of them have been stored in tedInit.
   private float spf1 (NodeIndexer ni1, int subtreeRootNode1, NodeIndexer ni2, int subtreeRootNode2) {
     int subtreeSize1 = ni1.sizes[subtreeRootNode1];
     int subtreeSize2 = ni2.sizes[subtreeRootNode2];
     if (subtreeSize1 == 1 && subtreeSize2 == 1) {
-      return costModel.ren(ni1.preL_to_node[subtreeRootNode1], ni2.preL_to_node[subtreeRootNode2]);
+      Node<D> n1 = ni1.preL_to_node[subtreeRootNode1];
+      Node<D> n2 = ni2.preL_to_node[subtreeRootNode2];
+      float maxCost = costModel.del(n1) + costModel.ins(n2);
+      float renCost = costModel.ren(n1, n2);
+      return renCost < maxCost ? renCost : maxCost;
     }
     if (subtreeSize1 == 1) {
-      float cost = ni2.preL_to_sumInsCost[subtreeRootNode2];
-      float minRenMinusIns = cost;
-      float nodeRenMinusIns = 0;
       Node<D> n1 = ni1.preL_to_node[subtreeRootNode1];
       Node<D> n2 = null;
+      float cost = ni2.preL_to_sumInsCost[subtreeRootNode2];
+      float maxCost = cost + costModel.del(n1);
+      float minRenMinusIns = cost;
+      float nodeRenMinusIns = 0;
       for (int i = subtreeRootNode2; i < subtreeRootNode2 + subtreeSize2; i++) {
         n2 = ni2.preL_to_node[i];
         nodeRenMinusIns = costModel.ren(n1, n2) - costModel.ins(n2);
@@ -723,14 +732,16 @@ public class APTED<C extends CostModel, D> {
           minRenMinusIns = nodeRenMinusIns;
         }
       }
-      return cost + minRenMinusIns;
+      cost += minRenMinusIns;
+      return cost < maxCost ? cost : maxCost;
     }
     if (subtreeSize2 == 1) {
-      float cost = ni1.preL_to_sumDelCost[subtreeRootNode1];
-      float minRenMinusDel = cost;
-      float nodeRenMinusDel = 0;
       Node<D> n1 = null;
       Node<D> n2 = ni2.preL_to_node[subtreeRootNode2];
+      float cost = ni1.preL_to_sumDelCost[subtreeRootNode1];
+      float maxCost = cost + costModel.ins(n2);
+      float minRenMinusDel = cost;
+      float nodeRenMinusDel = 0;
       for (int i = subtreeRootNode1; i < subtreeRootNode1 + subtreeSize1; i++) {
         n1 = ni1.preL_to_node[i];
         nodeRenMinusDel = costModel.ren(n1, n2) - costModel.del(n1);
@@ -738,7 +749,8 @@ public class APTED<C extends CostModel, D> {
           minRenMinusDel = nodeRenMinusDel;
         }
       }
-      return cost + minRenMinusDel;
+      cost += minRenMinusDel;
+      return cost < maxCost ? cost : maxCost;
     }
     return -1;
   }
