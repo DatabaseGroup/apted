@@ -51,7 +51,7 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
       "\n" +
       "SYNTAX\n" +
       "\n" +
-      "    java -jar APTED.jar {-t TREE1 TREE2 | -f FILE1 FILE2} [-c CD CI CR] [-v]\n" +
+      "    java -jar APTED.jar {-t TREE1 TREE2 | -f FILE1 FILE2} [-m] [-v]\n" +
       "\n" +
       "    java -jar APTED.jar -h\n" +
       "\n" +
@@ -59,8 +59,11 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
       "\n" +
       "    Compute the edit distance between two trees with APTED algorithm [1,2].\n" +
       "    APTED supersedes our RTED algorithm [3].\n" +
-      "    Currently only unit cost model is supported where each edit operation\n" +
+      "    By default unit cost model is supported where each edit operation\n" +
       "    has cost 1 (in case of equal labels the cost is 0).\n" +
+      "\n" +
+      "    For implementing other cost models see the details on github website\n" +
+      "    (https://github.com/DatabaseGroup/apted).\n" +
       "\n" +
       "LICENCE\n" +
       "\n" +
@@ -99,10 +102,10 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
       "    -m, --mapping\n" +
       "        compute the minimal edit mapping between two trees. There might\n" +
       "        be multiple minimal edit mappings. This option computes only one\n" +
-      "        of them. The frst line of the output is the cost of the mapping.\n" +
+      "        of them. The first line of the output is the cost of the mapping.\n" +
       "        The following lines represent the edit operations. n and m are\n" +
       "        postorder IDs (beginning with 1) of nodes in the left-hand and\n" +
-      "        the rigt-hand trees respectively.\n" +
+      "        the right-hand trees respectively.\n" +
       "            n->m - rename node n to m\n" +
       "            n->0 - delete node n\n" +
       "            0->m - insert node m\n" +
@@ -110,7 +113,7 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
       "\n" +
       "    java -jar APTED.jar -t {a{b}{c}} {a{b{d}}}\n" +// -c 1 1 0.5\n" +
       "    java -jar APTED.jar -f 1.tree 2.tree\n" +
-      // "    java -jar APTED.jar -t {a{b}{c}} {a{b{d}}} -v\n" +
+      "    java -jar APTED.jar -t {a{b}{c}} {a{b{d}}} -m -v\n" +
       "\n" +
       "REFERENCES\n" +
       "\n" +
@@ -179,11 +182,11 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
           parseTreesFromCommandLine(args[i+1], args[i+2]);
           i = i+2;
           run = true;
+        } else if (args[i].equals("-f") || args[i].equals("--files")) {
+          parseTreesFromFiles(args[i+1], args[i+2]);
+          i = i+2;
+          run = true;
         // TODO: -f option temporarily disabled for refactoring.
-        // } else if (args[i].equals("-f") || args[i].equals("--files")) {
-        //   parseTreesFromFiles(args[i+1], args[i+2]);
-        //   i = i+2;
-        //   run = true;
         // } else if (args[i].equals("-c") || args[i].equals("--costs")) {
         //   setCosts(args[i+1], args[i+2], args[i+3]);
         //   i = i+3;
@@ -229,7 +232,7 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
 
   /**
    * Parse two input trees from the command line and convert them to tree
-   * representation using {@link Node class}.
+   * representation using {@link Node} class.
    *
    * @param ts1 source input tree as string.
    * @param ts2 destination input tree as string.
@@ -250,29 +253,31 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
     }
 	}
 
+
+  /**
+   * Parses two input trees from given files and convert them to tree
+   * representation using {@link Node} class.
+   *
+   * @param fs1 path to file with source tree.
+   * @param fs2 path to file with destination tree.
+   * @see Node
+   */
+  private void parseTreesFromFiles(String fs1, String fs2) {
+    try {
+      t1 = inputParser.fromString((new BufferedReader(new FileReader(fs1))).readLine());
+    } catch (Exception e) {
+      System.out.println("TREE1 argument has wrong format");
+      System.exit(0);
+    }
+    try {
+      t2 = inputParser.fromString((new BufferedReader(new FileReader(fs2))).readLine());
+    } catch (Exception e) {
+      System.out.println("TREE2 argument has wrong format");
+      System.exit(0);
+    }
+  }
+
   // TODO: Bring the functionalitites below back to life.
-  // /**
-  //  * Parses two input trees from given files.
-  //  *
-  //  * @param fs1 path to file with source tree.
-  //  * @param fs2 path to file with destination tree.
-  //  */
-  // private void parseTreesFromFiles(String fs1, String fs2) {
-  //   try {
-  //     lt1 = LblTree.fromString((new BufferedReader(new FileReader(fs1))).readLine());
-  //     // size1 = lt1.getNodeCount();
-  //   } catch (Exception e) {
-  //     System.out.println("TREE1 argument has wrong format");
-  //     System.exit(0);
-  //   }
-  //   try {
-  //     lt2 = LblTree.fromString((new BufferedReader(new FileReader(fs2))).readLine());
-  //     // size2 = lt2.getNodeCount();
-  //   } catch (Exception e) {
-  //     System.out.println("TREE2 argument has wrong format");
-  //     System.exit(0);
-  //   }
-  // }
 
   // /**
   //  * Set custom costs for the edit operations.
