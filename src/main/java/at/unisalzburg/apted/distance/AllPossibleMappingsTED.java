@@ -21,14 +21,14 @@
  * SOFTWARE.
  */
 
-package distance;
+package at.unisalzburg.apted.distance;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import node.Node;
-import node.NodeIndexer;
-import costmodel.CostModel;
+import at.unisalzburg.apted.node.Node;
+import at.unisalzburg.apted.node.NodeIndexer;
+import at.unisalzburg.apted.costmodel.CostModel;
 
 /**
  * Implements an exponential algorithm for the tree edit distance. It computes
@@ -43,14 +43,14 @@ public class AllPossibleMappingsTED<C extends CostModel, D> {
   /**
    * Indexer of the source tree.
    *
-   * @see node.NodeIndexer
+   * @see at.unisalzburg.apted.node.NodeIndexer
    */
   private NodeIndexer it1;
 
   /**
    * Indexer of the destination tree.
    *
-   * @see node.NodeIndexer
+   * @see at.unisalzburg.apted.node.NodeIndexer
    */
   private NodeIndexer it2;
 

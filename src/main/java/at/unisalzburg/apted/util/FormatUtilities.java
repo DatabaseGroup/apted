@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-package util;
+package at.unisalzburg.apted.util;
 
 import java.util.Date;
 import java.util.LinkedList;
