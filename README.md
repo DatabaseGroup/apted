@@ -7,7 +7,7 @@ solution for computing the tree edit at.unisalzburg.apted.distance [1,2], which 
 algorithm [3].
 
 You can find more information on our Tree Edit Distance website
-http://tree-edit-at.unisalzburg.apted.distance.dbresearch.uni-salzburg.at/
+http://tree-edit-distance.dbresearch.uni-salzburg.at/
 
 ## Citing APTED
 
@@ -33,7 +33,7 @@ X Y F
 ## Output
 
 Our tool computes two outputs:
-- tree edit **at.unisalzburg.apted.distance** value - the minimum cost of transforming the source
+- tree edit **distance** value - the minimum cost of transforming the source
   tree into the destination tree.
 - tree edit **mapping** - a mapping between nodes that corresponds to the
   tree edit at.unisalzburg.apted.distance value. Nodes that are not mapped are deleted (source tree)
@@ -96,7 +96,7 @@ You can clone the code, compile, and build the JAR file the regular command-line
 way.
 
 We use [Gradle](https://gradle.org/) for connvenience.
-- ~~install Gradle~~
+- **(on Linux or Mac)** run `chmod +x gradlew`
 - run `gradle test` for unit tests (currently correctness tests)
 - run `gradle build` to find the `apted.jar` file in `build/libs/`
 
