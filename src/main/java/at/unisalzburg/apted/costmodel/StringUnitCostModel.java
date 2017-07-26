@@ -21,11 +21,10 @@
  * SOFTWARE.
  */
 
-package costmodel;
+package at.unisalzburg.apted.costmodel;
 
-import costmodel.CostModel;
-import node.Node;
-import node.StringNodeData;
+import at.unisalzburg.apted.node.Node;
+import at.unisalzburg.apted.node.StringNodeData;
 
 /**
  * This is a unit-nost model defined on string labels.

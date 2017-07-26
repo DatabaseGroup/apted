@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-package node;
+package at.unisalzburg.apted.node;
 
 import java.util.Vector;
 
@@ -86,8 +86,8 @@ public class Node<D> {
   /**
    * Returns a string representation of the tree in bracket notation.
    *
-   * <p>IMPORTANT: Works only for nodes storing {@link node.StringNodeData}
-   * due to using {@link node.StringNodeData#getLabel()}.
+   * <p>IMPORTANT: Works only for nodes storing {@link at.unisalzburg.apted.node.StringNodeData}
+   * due to using {@link at.unisalzburg.apted.node.StringNodeData#getLabel()}.
    *
    * @return tree in bracket notation.
    */

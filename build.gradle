@@ -1,4 +1,8 @@
+group 'at.unisalzburg'
+version '1.0'
+
 apply plugin: 'java'
+apply plugin: "maven-publish"
 
 // Dependency repository.
 repositories {
@@ -11,13 +15,6 @@ dependencies {
                 'com.google.code.gson:gson:2.8.0'
 }
 
-// Specify main class for the JAR file.
-jar {
-    manifest {
-        attributes 'Main-Class': 'util.CommandLine'
-    }
-}
-
 // Include test classes and private members into javadoc.
 javadoc {
   classpath += sourceSets.test.compileClasspath
@@ -28,4 +25,28 @@ javadoc {
 // Enable printing to standard output while testing.
 test {
   testLogging.showStandardStreams = true
+}
+
+// For publishing in MavenLocal
+task sourcesJar(type: Jar, dependsOn: "classes") {
+  classifier = 'sources'
+
+  from sourceSets.main.allSource
+  from sourceSets.test.allSource
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId 'at.unisalzburg'
+            artifactId 'apted'
+            version '1.0'
+
+            from components.java
+
+            artifact sourcesJar {
+                classifier "sources"
+            }
+        }
+    }
 }

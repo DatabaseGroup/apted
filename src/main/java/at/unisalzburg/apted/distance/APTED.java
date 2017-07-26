@@ -21,14 +21,14 @@
  * SOFTWARE.
  */
 
-package distance;
+package at.unisalzburg.apted.distance;
 
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Stack;
-import node.Node;
-import node.NodeIndexer;
-import costmodel.CostModel;
+import at.unisalzburg.apted.node.Node;
+import at.unisalzburg.apted.node.NodeIndexer;
+import at.unisalzburg.apted.costmodel.CostModel;
 
 /**
  * Implements APTED algorithm [1,2].
@@ -76,14 +76,14 @@ public class APTED<C extends CostModel, D> {
   /**
    * Indexer of the source tree.
    *
-   * @see node.NodeIndexer
+   * @see at.unisalzburg.apted.node.NodeIndexer
    */
   private NodeIndexer it1;
 
   /**
    * Indexer of the destination tree.
    *
-   * @see node.NodeIndexer
+   * @see at.unisalzburg.apted.node.NodeIndexer
    */
   private NodeIndexer it2;
 

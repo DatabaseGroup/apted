@@ -34,19 +34,19 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import com.google.gson.Gson;
 import static org.junit.Assert.assertEquals;
-import distance.APTED;
-import distance.AllPossibleMappingsTED;
-import parser.BracketStringInputParser;
-import node.Node;
-import node.StringNodeData;
-import costmodel.PerEditOperationStringNodeDataCostModel;
+import at.unisalzburg.apted.distance.APTED;
+import at.unisalzburg.apted.distance.AllPossibleMappingsTED;
+import at.unisalzburg.apted.parser.BracketStringInputParser;
+import at.unisalzburg.apted.node.Node;
+import at.unisalzburg.apted.node.StringNodeData;
+import at.unisalzburg.apted.costmodel.PerEditOperationStringNodeDataCostModel;
 
 /**
  * Correctness unit tests of distance computation for node labels with a single
  * string value and per-edit-operation cost model.
  *
- * @see node.StringNodeData
- * @see costmodel.PerEditOperationStringNodeDataCostModel
+ * @see at.unisalzburg.apted.node.StringNodeData
+ * @see at.unisalzburg.apted.costmodel.PerEditOperationStringNodeDataCostModel
  */
 @RunWith(Parameterized.class)
 public class PerEditOperationCorrectnessTest {
@@ -171,9 +171,9 @@ public class PerEditOperationCorrectnessTest {
    * <p>The costs of edit operations are set to some example values different
    * than in the unit cost model.
    *
-   * @see node.StringNodeData
-   * @see costmodel.PerEditOperationStringNodeDataCostModel
-   * @see distance.AllPossibleMappingsTED
+   * @see at.unisalzburg.apted.node.StringNodeData
+   * @see at.unisalzburg.apted.costmodel.PerEditOperationStringNodeDataCostModel
+   * @see at.unisalzburg.apted.distance.AllPossibleMappingsTED
    */
   @Test
   public void distancePerEditOperationStringNodeDataCostModel() {

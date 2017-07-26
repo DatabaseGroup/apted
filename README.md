@@ -96,9 +96,27 @@ You can clone the code, compile, and build the JAR file the regular command-line
 way.
 
 We use [Gradle](https://gradle.org/) for connvenience.
-- [install Gradle](https://gradle.org/install)
+- **(on Linux or Mac)** run `chmod +x gradlew`
 - run `gradle test` for unit tests (currently correctness tests)
 - run `gradle build` to find the `apted.jar` file in `build/libs/`
+
+## Deploying to local maven repository
+
+You can publish the project into your local maven repository to import into other projects.
+
+- run `gradle publishToMavenLocal` 
+
+To use APTED in another project:
+
+```
+repositories {
+  mavenLocal()
+}
+
+dependencies {
+  compile 'at.unisalzburg:apted:1.0'
+}
+  ```
 
 ## Javadoc documentation
 
