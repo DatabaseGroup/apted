@@ -23,7 +23,6 @@
 
 package costmodel;
 
-import costmodel.CostModel;
 import node.Node;
 import node.StringNodeData;
 
@@ -33,39 +32,41 @@ import node.StringNodeData;
  * @see CostModel
  * @see StringNodeData
  */
- // TODO: Use a label dictionary to encode string labels with integers for
- //       faster rename cost computation.
+/* TODO: Use a label dictionary to encode string labels
+   with integers for faster rename cost computation. */
 public class StringUnitCostModel implements CostModel<StringNodeData> {
 
-  /**
-   * Calculates the cost of deleting a node.
-   *
-   * @param n a node considered to be deleted.
-   * @return {@code 1} - a fixed cost of deleting a node.
-   */
-  public float del(Node<StringNodeData> n) {
-    return 1.0f;
-  }
+    /**
+     * Calculates the cost of deleting a node.
+     *
+     * @param node a node considered to be deleted.
+     * @return {@code 1} - a fixed cost of deleting a node.
+     */
+    public float delete(Node<StringNodeData> node) {
+        return 1.0f;
+    }
 
-  /**
-   * Calculates the cost of inserting a node.
-   *
-   * @param n a node considered to be inserted.
-   * @return {@code 1} - a fixed cost of inserting a node.
-   */
-  public float ins(Node<StringNodeData> n) {
-    return 1.0f;
-  }
+    /**
+     * Calculates the cost of inserting a node.
+     *
+     * @param node a node considered to be inserted.
+     * @return {@code 1} - a fixed cost of inserting a node.
+     */
+    public float insert(Node<StringNodeData> node) {
+        return 1.0f;
+    }
 
-  /**
-   * Calculates the cost of renaming the label of the source node to the label
-   * of the destination node.
-   *
-   * @param n1 a source node for rename.
-   * @param n2 a destination node for rename.
-   * @return {@code 1} if labels of renamed nodes are equal, and {@code 0} otherwise.
-   */
-  public float ren(Node<StringNodeData> n1, Node<StringNodeData> n2) {
-    return (n1.getNodeData().getLabel().equals(n2.getNodeData().getLabel())) ? 0.0f : 1.0f;
-  }
+    /**
+     * Calculates the cost of renaming the label of the source node to the label
+     * of the destination node.
+     *
+     * @param sourceNode a source node for rename.
+     * @param targetNode a destination node for rename.
+     * @return {@code 1} if labels of renamed nodes are equal, and {@code 0} otherwise.
+     */
+    public float rename(Node<StringNodeData> sourceNode, Node<StringNodeData> targetNode) {
+        String source = sourceNode.getNodeData().getLabel();
+        String target = targetNode.getNodeData().getLabel();
+        return (source.equals(target)) ? 0.0f : 1.0f;
+    }
 }

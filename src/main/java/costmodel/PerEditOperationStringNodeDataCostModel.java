@@ -23,7 +23,6 @@
 
 package costmodel;
 
-import costmodel.CostModel;
 import node.Node;
 import node.StringNodeData;
 
@@ -33,62 +32,64 @@ import node.StringNodeData;
  */
 public class PerEditOperationStringNodeDataCostModel implements CostModel<StringNodeData> {
 
-  /**
-   * Stores the cost of deleting a node.
-   */
-  private float delCost;
+    /**
+     * Stores the cost of deleting a node.
+     */
+    private float deleteCost;
 
-  /**
-   * Stores the cost of inserting a node.
-   */
-  private float insCost;
+    /**
+     * Stores the cost of inserting a node.
+     */
+    private float insertCost;
 
-  /**
-   * Stores the cost of mapping two nodes (renaming their labels).
-   */
-  private float renCost;
+    /**
+     * Stores the cost of mapping two nodes (renaming their labels).
+     */
+    private float renameCost;
 
-  /**
-   * Initialises the cost model with the passed edit operation costs.
-   *
-   * @param delCost deletion cost.
-   * @param insCost insertion cost.
-   * @param renCost rename cost.
-   */
-  public PerEditOperationStringNodeDataCostModel(float delCost, float insCost, float renCost) {
-    this.delCost = delCost;
-    this.insCost = insCost;
-    this.renCost = renCost;
-  }
+    /**
+     * Initialises the cost model with the passed edit operation costs.
+     *
+     * @param deleteCost deletion cost.
+     * @param insertCost insertion cost.
+     * @param renameCost rename cost.
+     */
+    public PerEditOperationStringNodeDataCostModel(float deleteCost, float insertCost, float renameCost) {
+        this.deleteCost = deleteCost;
+        this.insertCost = insertCost;
+        this.renameCost = renameCost;
+    }
 
-  /**
-   * Calculates the cost of deleting a node.
-   *
-   * @param n the node considered to be deleted.
-   * @return the cost of deleting node n.
-   */
-  public float del(Node<StringNodeData> n) {
-    return delCost;
-  }
+    /**
+     * Calculates the cost of deleting a node.
+     *
+     * @param node the node considered to be deleted.
+     * @return the cost of deleting node n.
+     */
+    public float delete(Node<StringNodeData> node) {
+        return deleteCost;
+    }
 
-  /**
-   * Calculates the cost of inserting a node.
-   *
-   * @param n the node considered to be inserted.
-   * @return the cost of inserting node n.
-   */
-  public float ins(Node<StringNodeData> n) {
-    return insCost;
-  }
+    /**
+     * Calculates the cost of inserting a node.
+     *
+     * @param node the node considered to be inserted.
+     * @return the cost of inserting node n.
+     */
+    public float insert(Node<StringNodeData> node) {
+        return insertCost;
+    }
 
-  /**
-   * Calculates the cost of renaming the string labels of two nodes.
-   *
-   * @param n1 the source node of rename.
-   * @param n2 the destination node of rename.
-   * @return the cost of renaming node n1 to n2.
-   */
-  public float ren(Node<StringNodeData> n1, Node<StringNodeData> n2) {
-    return (n1.getNodeData().getLabel().equals(n2.getNodeData().getLabel())) ? 0.0f : renCost;
-  }
+    /**
+     * Calculates the cost of renaming the string labels of two nodes.
+     *
+     * @param sourceNode the source node of rename.
+     * @param targetNode the destination node of rename.
+     * @return the cost of renaming node n1 to n2.
+     */
+    public float rename(Node<StringNodeData> sourceNode, Node<StringNodeData> targetNode) {
+        String source = sourceNode.getNodeData().getLabel();
+        String target = targetNode.getNodeData().getLabel();
+        return (source.equals(target)) ? 0.0f : renameCost;
+    }
 }
