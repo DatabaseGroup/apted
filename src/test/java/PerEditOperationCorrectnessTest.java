@@ -21,25 +21,25 @@
  * SOFTWARE.
  */
 
-import java.util.Collection;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import org.junit.Before;
+import com.google.gson.Gson;
+import costmodel.PerEditOperationStringNodeDataCostModel;
+import distance.APTED;
+import distance.AllPossibleMappingsTED;
+import node.Node;
+import node.StringNodeData;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import com.google.gson.Gson;
-import static org.junit.Assert.assertEquals;
-import distance.APTED;
-import distance.AllPossibleMappingsTED;
 import parser.BracketStringInputParser;
-import node.Node;
-import node.StringNodeData;
-import costmodel.PerEditOperationStringNodeDataCostModel;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Correctness unit tests of distance computation for node labels with a single
@@ -51,143 +51,143 @@ import costmodel.PerEditOperationStringNodeDataCostModel;
 @RunWith(Parameterized.class)
 public class PerEditOperationCorrectnessTest {
 
-  /**
-   * Test case object holding parameters of a single test case.
-   *
-   * <p>Could be also deserialized here but without much benefit.
-   */
-  private TestCase testCase;
-
-  /**
-   * This class represents a single test case from the JSON file. JSON keys
-   * are mapped to fiels of this class.
-   */
-  // [TODO] Verify if this is the best placement for this class.
-  private static class TestCase {
+    /**
+     * Test case object holding parameters of a single test case.
+     * <p>
+     * <p>Could be also deserialized here but without much benefit.
+     */
+    private TestCase testCase;
 
     /**
-     * Test identifier to quickly find failed test case in JSON file.
+     * This class represents a single test case from the JSON file. JSON keys
+     * are mapped to fiels of this class.
      */
-    private int testID;
+    // [TODO] Verify if this is the best placement for this class.
+    private static class TestCase {
 
-    /**
-     * Source tree as string.
-     */
-    private String t1;
+        /**
+         * Test identifier to quickly find failed test case in JSON file.
+         */
+        private int testID;
 
-    /**
-     * Destination tree as string.
-     */
-    private String t2;
+        /**
+         * Source tree as string.
+         */
+        private String t1;
 
-    /**
-     * Correct distance value between source and destination trees.
-     */
-    private int d;
+        /**
+         * Destination tree as string.
+         */
+        private String t2;
 
-    /**
-     * Used in printing the test case details on failure with '(name = "{0}")'.
-     *
-     * @return test case details.
-     * @see CorrectnessTest#data()
-     */
-    public String toString() {
-      return "testID:" + testID + ",t1:" + t1 + ",t2:" + t2 + ",d:" + d;
+        /**
+         * Correct distance value between source and destination trees.
+         */
+        private int d;
+
+        /**
+         * Used in printing the test case details on failure with '(name = "{0}")'.
+         *
+         * @return test case details.
+         * @see CorrectnessTest#data()
+         */
+        public String toString() {
+            return "testID:" + testID + ",t1:" + t1 + ",t2:" + t2 + ",d:" + d;
+        }
+
+        /**
+         * Returns identifier of this test case.
+         *
+         * @return test case identifier.
+         */
+        public int getTestID() {
+            return testID;
+        }
+
+        /**
+         * Returns source tree of this test case.
+         *
+         * @return source tree.
+         */
+        public String getT1() {
+            return t1;
+        }
+
+        /**
+         * Returns destination tree of this test case.
+         *
+         * @return destination tree.
+         */
+        public String getT2() {
+            return t2;
+        }
+
+        /**
+         * Returns correct distance value between source and destination trees
+         * of this test case.
+         *
+         * @return correct distance.
+         */
+        public int getD() {
+            return d;
+        }
+
     }
 
     /**
-     * Returns identifier of this test case.
+     * Constructs a single test for a single test case. Used for parameterised
+     * tests.
      *
-     * @return test case identifier.
+     * @param testCase single test case.
      */
-    public int getTestID() {
-      return testID;
+    public PerEditOperationCorrectnessTest(TestCase testCase) {
+        this.testCase = testCase;
     }
 
     /**
-     * Returns source tree of this test case.
+     * Returns a list of test cases read from external JSON file.
+     * <p>
+     * <p>Uses google.gson for reading JSON document.
+     * <p>
+     * <p>In case of a failure, the parameter values from {@link TestCase} object
+     * are printed '(name = "{0}")'.
      *
-     * @return source tree.
+     * @return list of all test cases read from JSON file.
+     * @throws IOException in case of failure of reading the JSON file.
      */
-    public String getT1() {
-      return t1;
+    @Parameters(name = "{0}")
+    public static Collection data() throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(CorrectnessTest.class.getResource("/mini.json").getPath()));
+        Gson gson = new Gson();
+        TestCase[] testCases = new Gson().fromJson(br, TestCase[].class);
+        return Arrays.asList(testCases);
     }
 
     /**
-     * Returns destination tree of this test case.
+     * Compute TED for a single test case and compare to the correct value. Uses
+     * node labels with a single string value and per-edit-operation cost model.
+     * <p>
+     * <p>The correct value is calculated using AllPossibleMappingsTED algorithm.
+     * <p>The costs of edit operations are set to some example values different
+     * than in the unit cost model.
      *
-     * @return destination tree.
+     * @see node.StringNodeData
+     * @see costmodel.PerEditOperationStringNodeDataCostModel
+     * @see distance.AllPossibleMappingsTED
      */
-    public String getT2() {
-      return t2;
+    @Test
+    public void distancePerEditOperationStringNodeDataCostModel() {
+        // Parse the input.
+        BracketStringInputParser parser = new BracketStringInputParser();
+        Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+        Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+        // Initialise algorithms.
+        APTED<PerEditOperationStringNodeDataCostModel, StringNodeData> apted = new APTED<>(new PerEditOperationStringNodeDataCostModel(0.4f, 0.4f, 0.6f));
+        AllPossibleMappingsTED<PerEditOperationStringNodeDataCostModel, StringNodeData> apmted = new AllPossibleMappingsTED<>(new PerEditOperationStringNodeDataCostModel(0.4f, 0.4f, 0.6f));
+        // Calculate distances using both algorithms.
+        float result = apted.computeEditDistance(t1, t2);
+        float correctResult = apmted.computeEditDistance(t1, t2);
+        assertEquals(correctResult, result, 0.0001);
     }
-
-    /**
-     * Returns correct distance value between source and destination trees
-     * of this test case.
-     *
-     * @return correct distance.
-     */
-    public int getD() {
-      return d;
-    }
-
-  }
-
-  /**
-   * Constructs a single test for a single test case. Used for parameterised
-   * tests.
-   *
-   * @param testCase single test case.
-   */
-  public PerEditOperationCorrectnessTest(TestCase testCase) {
-    this.testCase = testCase;
-  }
-
-  /**
-   * Returns a list of test cases read from external JSON file.
-   *
-   * <p>Uses google.gson for reading JSON document.
-   *
-   * <p>In case of a failure, the parameter values from {@link TestCase} object
-   * are printed '(name = "{0}")'.
-   *
-   * @return list of all test cases read from JSON file.
-   * @throws IOException in case of failure of reading the JSON file.
-   */
-  @Parameters(name = "{0}")
-  public static Collection data() throws IOException {
-    BufferedReader br = new BufferedReader(new FileReader(CorrectnessTest.class.getResource("/mini.json").getPath()));
-    Gson gson = new Gson();
-    TestCase[] testCases = new Gson().fromJson(br, TestCase[].class);
-    return Arrays.asList(testCases);
-  }
-
-  /**
-   * Compute TED for a single test case and compare to the correct value. Uses
-   * node labels with a single string value and per-edit-operation cost model.
-   *
-   * <p>The correct value is calculated using AllPossibleMappingsTED algorithm.
-   * <p>The costs of edit operations are set to some example values different
-   * than in the unit cost model.
-   *
-   * @see node.StringNodeData
-   * @see costmodel.PerEditOperationStringNodeDataCostModel
-   * @see distance.AllPossibleMappingsTED
-   */
-  @Test
-  public void distancePerEditOperationStringNodeDataCostModel() {
-    // Parse the input.
-    BracketStringInputParser parser = new BracketStringInputParser();
-    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
-    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
-    // Initialise algorithms.
-    APTED<PerEditOperationStringNodeDataCostModel, StringNodeData> apted = new APTED<>(new PerEditOperationStringNodeDataCostModel(0.4f, 0.4f, 0.6f));
-    AllPossibleMappingsTED<PerEditOperationStringNodeDataCostModel, StringNodeData> apmted = new AllPossibleMappingsTED<>(new PerEditOperationStringNodeDataCostModel(0.4f, 0.4f, 0.6f));
-    // Calculate distances using both algorithms.
-    float result = apted.computeEditDistance(t1, t2);
-    float correctResult = apmted.computeEditDistance(t1, t2);
-    assertEquals(correctResult, result, 0.0001);
-  }
 
 }

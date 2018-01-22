@@ -23,17 +23,18 @@
 
 package parser;
 
-import java.util.Vector;
-import util.FormatUtilities;
 import node.Node;
 import node.StringNodeData;
+import util.FormatUtilities;
+
+import java.util.Vector;
 
 // [TODO] Make this parser independent from FormatUtilities - move here relevant elements.
 
 /**
  * Parser for the input trees in the bracket notation with a single string-value
  * label of type {@link StringNodeData}.
- *
+ * <p>
  * <p>Bracket notation encodes the trees with nested parentheses, for example,
  * in tree {A{B{X}{Y}{F}}{C}} the root node has label A and two children with
  * labels B and C. Node with label B has three children with labels X, Y, F.
@@ -43,20 +44,20 @@ import node.StringNodeData;
  */
 public class BracketStringInputParser implements InputParser<StringNodeData> {
 
-  /**
-   * Parses the input tree as a string and converts it to our tree
-   * representation using the {@link Node} class.
-   *
-   * @param s input tree as string in bracket notation.
-   * @return tree representation of the bracket notation input.
-   * @see Node
-   */
-  public Node<StringNodeData> fromString(String s) {
-    s = s.substring(s.indexOf("{"), s.lastIndexOf("}") + 1);
-    Node<StringNodeData> node = new Node<StringNodeData>(new StringNodeData(FormatUtilities.getRoot(s)));
-    Vector c = FormatUtilities.getChildren(s);
-    for(int i = 0; i < c.size(); i++)
-        node.addChild(fromString((String)c.elementAt(i)));
-    return node;
-  }
+    /**
+     * Parses the input tree as a string and converts it to our tree
+     * representation using the {@link Node} class.
+     *
+     * @param s input tree as string in bracket notation.
+     * @return tree representation of the bracket notation input.
+     * @see Node
+     */
+    public Node<StringNodeData> fromString(String s) {
+        s = s.substring(s.indexOf("{"), s.lastIndexOf("}") + 1);
+        Node<StringNodeData> node = new Node<StringNodeData>(new StringNodeData(FormatUtilities.getRoot(s)));
+        Vector c = FormatUtilities.getChildren(s);
+        for (int i = 0; i < c.size(); i++)
+            node.addChild(fromString((String) c.elementAt(i)));
+        return node;
+    }
 }

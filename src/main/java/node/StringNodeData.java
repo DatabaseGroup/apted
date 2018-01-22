@@ -31,26 +31,26 @@ package node;
  */
 public class StringNodeData {
 
-  /**
-   * The label of a node.
-   */
-  private String label;
+    /**
+     * The label of a node.
+     */
+    private String label;
 
-  /**
-   * Constructs node data with a specified label.
-   *
-   * @param label string label of a node.
-   */
-  public StringNodeData(String label) {
-    this.label = label;
-  }
+    /**
+     * Constructs node data with a specified label.
+     *
+     * @param label string label of a node.
+     */
+    public StringNodeData(String label) {
+        this.label = label;
+    }
 
-  /**
-   * Returns the label of a node.
-   *
-   * @return node label.
-   */
-  public String getLabel() {
-    return label;
-  }
+    /**
+     * Returns the label of a node.
+     *
+     * @return node label.
+     */
+    public String getLabel() {
+        return label;
+    }
 }

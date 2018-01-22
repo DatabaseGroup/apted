@@ -28,40 +28,40 @@ import node.Node;
 /**
  * This interface specifies the methods to implement for a custom cost model.
  * The methods represent the costs of edit operations (delete, insert, rename).
- *
+ * <p>
  * <p>If the cost function is a metric, the tree edit distance is a metric too.
- *
+ * <p>
  * <p>However, the cost function does not have to be a metric - the costs of
  * deletion, insertion and rename can be arbitrary.
- *
+ * <p>
  * <p>IMPORTANT: Mind the <b>float</b> type use for costs.
  *
  * @param <D> type of node data on which the cost model is defined.
  */
 public interface CostModel<D> {
 
-  /**
-   * Calculates the cost of deleting a node.
-   *
-   * @param n the node considered to be deleted.
-   * @return the cost of deleting node n.
-   */
-  public float del(Node<D> n);
+    /**
+     * Calculates the cost of deleting a node.
+     *
+     * @param node the node considered to be deleted.
+     * @return the cost of deleting node node.
+     */
+    float delete(Node<D> node);
 
-  /**
-   * Calculates the cost of inserting a node.
-   *
-   * @param n the node considered to be inserted.
-   * @return the cost of inserting node n.
-   */
-  public float ins(Node<D> n);
+    /**
+     * Calculates the cost of inserting a node.
+     *
+     * @param node the node considered to be inserted.
+     * @return the cost of inserting node node.
+     */
+    float insert(Node<D> node);
 
-  /**
-   * Calculates the cost of renaming (mapping) two nodes.
-   *
-   * @param n1 the source node of rename.
-   * @param n2 the destination node of rename.
-   * @return the cost of renaming (mapping) node n1 to n2.
-   */
-  public float ren(Node<D> n1, Node<D> n2);
+    /**
+     * Calculates the cost of renaming (mapping) two nodes.
+     *
+     * @param sourceNode the source node of rename.
+     * @param targetNode the destination node of rename.
+     * @return the cost of renaming (mapping) node sourceNode to targetNode.
+     */
+    float rename(Node<D> sourceNode, Node<D> targetNode);
 }

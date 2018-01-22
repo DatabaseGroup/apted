@@ -21,31 +21,32 @@
  * SOFTWARE.
  */
 
-import java.util.Collection;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import org.junit.Before;
+import com.google.gson.Gson;
+import costmodel.StringUnitCostModel;
+import distance.APTED;
+import node.Node;
+import node.StringNodeData;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import com.google.gson.Gson;
-import static org.junit.Assert.assertEquals;
-import distance.APTED;
 import parser.BracketStringInputParser;
-import node.Node;
-import node.StringNodeData;
-import costmodel.StringUnitCostModel;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Correctness unit tests of distance and mapping computation.
- *
+ * <p>
  * <p>In case of mapping, only mapping cost is verified against the correct
  * distance.
- *
+ * <p>
  * <p>Currently tests only for unit-cost model and single string-value labels.
  *
  * @see StringNodeData
@@ -54,228 +55,228 @@ import costmodel.StringUnitCostModel;
 @RunWith(Parameterized.class)
 public class CorrectnessTest {
 
-  /**
-   * Test case object holding parameters of a single test case.
-   *
-   * <p>Could be also deserialized here but without much benefit.
-   */
-  private TestCase testCase;
-
-  /**
-   * This class represents a single test case from the JSON file. JSON keys
-   * are mapped to fiels of this class.
-   */
-  // [TODO] Verify if this is the best placement for this class.
-  private static class TestCase {
+    /**
+     * Test case object holding parameters of a single test case.
+     * <p>
+     * <p>Could be also deserialized here but without much benefit.
+     */
+    private TestCase testCase;
 
     /**
-     * Test identifier to quickly find failed test case in JSON file.
+     * This class represents a single test case from the JSON file. JSON keys
+     * are mapped to fiels of this class.
      */
-    private int testID;
+    // [TODO] Verify if this is the best placement for this class.
+    private static class TestCase {
 
-    /**
-     * Source tree as string.
-     */
-    private String t1;
+        /**
+         * Test identifier to quickly find failed test case in JSON file.
+         */
+        private int testID;
 
-    /**
-     * Destination tree as string.
-     */
-    private String t2;
+        /**
+         * Source tree as string.
+         */
+        private String t1;
 
-    /**
-     * Correct distance value between source and destination trees.
-     */
-    private int d;
+        /**
+         * Destination tree as string.
+         */
+        private String t2;
 
-    /**
-     * Used in printing the test case details on failure with '(name = "{0}")'.
-     *
-     * @return test case details.
-     * @see CorrectnessTest#data()
-     */
-    public String toString() {
-      return "testID:" + testID + ",t1:" + t1 + ",t2:" + t2 + ",d:" + d;
+        /**
+         * Correct distance value between source and destination trees.
+         */
+        private int d;
+
+        /**
+         * Used in printing the test case details on failure with '(name = "{0}")'.
+         *
+         * @return test case details.
+         * @see CorrectnessTest#data()
+         */
+        public String toString() {
+            return "testID:" + testID + ",t1:" + t1 + ",t2:" + t2 + ",d:" + d;
+        }
+
+        /**
+         * Returns identifier of this test case.
+         *
+         * @return test case identifier.
+         */
+        public int getTestID() {
+            return testID;
+        }
+
+        /**
+         * Returns source tree of this test case.
+         *
+         * @return source tree.
+         */
+        public String getT1() {
+            return t1;
+        }
+
+        /**
+         * Returns destination tree of this test case.
+         *
+         * @return destination tree.
+         */
+        public String getT2() {
+            return t2;
+        }
+
+        /**
+         * Returns correct distance value between source and destination trees
+         * of this test case.
+         *
+         * @return correct distance.
+         */
+        public int getD() {
+            return d;
+        }
+
     }
 
     /**
-     * Returns identifier of this test case.
+     * Constructs a single test for a single test case. Used for parameterised
+     * tests.
      *
-     * @return test case identifier.
+     * @param testCase single test case.
      */
-    public int getTestID() {
-      return testID;
+    public CorrectnessTest(TestCase testCase) {
+        this.testCase = testCase;
     }
 
     /**
-     * Returns source tree of this test case.
+     * Returns a list of test cases read from external JSON file.
+     * <p>
+     * <p>Uses google.gson for reading JSON document.
+     * <p>
+     * <p>In case of a failure, the parameter values from {@link TestCase} object
+     * are printed '(name = "{0}")'.
      *
-     * @return source tree.
+     * @return list of all test cases read from JSON file.
+     * @throws IOException in case of failure of reading the JSON file.
      */
-    public String getT1() {
-      return t1;
+    @Parameters(name = "{0}")
+    public static Collection data() throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(CorrectnessTest.class.getResource("/correctness_test_cases.json").getPath()));
+        Gson gson = new Gson();
+        TestCase[] testCases = new Gson().fromJson(br, TestCase[].class);
+        return Arrays.asList(testCases);
     }
 
     /**
-     * Returns destination tree of this test case.
-     *
-     * @return destination tree.
+     * Parse trees from bracket notation to {node.StringNodeData}, convert back
+     * to strings and verify equality with the input.
      */
-    public String getT2() {
-      return t2;
+    @Test
+    public void parsingBracketNotationToStringNodeData() {
+        // Parse the input.
+        BracketStringInputParser parser = new BracketStringInputParser();
+        Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+        Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+        assertEquals(testCase.getT1(), t1.toString());
+        assertEquals(testCase.getT2(), t2.toString());
     }
 
     /**
-     * Returns correct distance value between source and destination trees
-     * of this test case.
+     * Compute TED for a single test case and compare to the correct value. Uses
+     * node labels with a single string value and unit cost model.
      *
-     * @return correct distance.
+     * @see node.StringNodeData
+     * @see costmodel.StringUnitCostModel
      */
-    public int getD() {
-      return d;
+    @Test
+    public void distanceUnitCostStringNodeDataCostModel() {
+        // Parse the input.
+        BracketStringInputParser parser = new BracketStringInputParser();
+        Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+        Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+        // Initialise APTED.
+        APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
+        // This cast is safe due to unit cost.
+        int result = (int) apted.computeEditDistance(t1, t2);
+        assertEquals(testCase.getD(), result);
+        // Verify the symmetric case.
+        result = (int) apted.computeEditDistance(t2, t1);
+        assertEquals(testCase.getD(), result);
     }
 
-  }
+    /**
+     * Compute TED for a single test case and compare to the correct value. Uses
+     * node labels with a single string value and unit cost model.
+     * <p>
+     * <p>Triggers spf_L to execute. The strategy is fixed to left paths in the
+     * left-hand tree.
+     *
+     * @see node.StringNodeData
+     * @see costmodel.StringUnitCostModel
+     */
+    @Test
+    public void distanceUnitCostStringNodeDataCostModelSpfL() {
+        // Parse the input.
+        BracketStringInputParser parser = new BracketStringInputParser();
+        Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+        Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+        // Initialise APTED.
+        APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
+        // This cast is safe due to unit cost.
+        int result = (int) apted.computeEditDistance_spfTest(t1, t2, 0);
+        assertEquals(testCase.getD(), result);
+    }
 
-  /**
-   * Constructs a single test for a single test case. Used for parameterised
-   * tests.
-   *
-   * @param testCase single test case.
-   */
-  public CorrectnessTest(TestCase testCase) {
-    this.testCase = testCase;
-  }
+    /**
+     * Compute TED for a single test case and compare to the correct value. Uses
+     * node labels with a single string value and unit cost model.
+     * <p>
+     * <p>Triggers spf_R to execute. The strategy is fixed to right paths in the
+     * left-hand tree.
+     *
+     * @see node.StringNodeData
+     * @see costmodel.StringUnitCostModel
+     */
+    @Test
+    public void distanceUnitCostStringNodeDataCostModelSpfR() {
+        // Parse the input.
+        BracketStringInputParser parser = new BracketStringInputParser();
+        Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+        Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+        // Initialise APTED.
+        APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
+        // This cast is safe due to unit cost.
+        int result = (int) apted.computeEditDistance_spfTest(t1, t2, 1);
+        assertEquals(testCase.getD(), result);
+    }
 
-  /**
-   * Returns a list of test cases read from external JSON file.
-   *
-   * <p>Uses google.gson for reading JSON document.
-   *
-   * <p>In case of a failure, the parameter values from {@link TestCase} object
-   * are printed '(name = "{0}")'.
-   *
-   * @return list of all test cases read from JSON file.
-   * @throws IOException in case of failure of reading the JSON file.
-   */
-  @Parameters(name = "{0}")
-  public static Collection data() throws IOException {
-    BufferedReader br = new BufferedReader(new FileReader(CorrectnessTest.class.getResource("/correctness_test_cases.json").getPath()));
-    Gson gson = new Gson();
-    TestCase[] testCases = new Gson().fromJson(br, TestCase[].class);
-    return Arrays.asList(testCases);
-  }
+    // IDEA: Write test that triggers spf_A for each subtree pair - disallow
+    //       using spf_L and spf_R.
 
-  /**
-   * Parse trees from bracket notation to {node.StringNodeData}, convert back
-   * to strings and verify equality with the input.
-   */
-  @Test
-  public void parsingBracketNotationToStringNodeData() {
-    // Parse the input.
-    BracketStringInputParser parser = new BracketStringInputParser();
-    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
-    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
-    assertEquals(testCase.getT1(), t1.toString());
-    assertEquals(testCase.getT2(), t2.toString());
-  }
-
-  /**
-   * Compute TED for a single test case and compare to the correct value. Uses
-   * node labels with a single string value and unit cost model.
-   *
-   * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
-   */
-  @Test
-  public void distanceUnitCostStringNodeDataCostModel() {
-    // Parse the input.
-    BracketStringInputParser parser = new BracketStringInputParser();
-    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
-    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
-    // Initialise APTED.
-    APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
-    // This cast is safe due to unit cost.
-    int result = (int)apted.computeEditDistance(t1, t2);
-    assertEquals(testCase.getD(), result);
-    // Verify the symmetric case.
-    result = (int)apted.computeEditDistance(t2, t1);
-    assertEquals(testCase.getD(), result);
-  }
-
-  /**
-   * Compute TED for a single test case and compare to the correct value. Uses
-   * node labels with a single string value and unit cost model.
-   *
-   * <p>Triggers spf_L to execute. The strategy is fixed to left paths in the
-   * left-hand tree.
-   *
-   * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
-   */
-  @Test
-  public void distanceUnitCostStringNodeDataCostModelSpfL() {
-    // Parse the input.
-    BracketStringInputParser parser = new BracketStringInputParser();
-    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
-    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
-    // Initialise APTED.
-    APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
-    // This cast is safe due to unit cost.
-    int result = (int)apted.computeEditDistance_spfTest(t1, t2, 0);
-    assertEquals(testCase.getD(), result);
-  }
-
-  /**
-   * Compute TED for a single test case and compare to the correct value. Uses
-   * node labels with a single string value and unit cost model.
-   *
-   *<p>Triggers spf_R to execute. The strategy is fixed to right paths in the
-   * left-hand tree.
-   *
-   * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
-   */
-  @Test
-  public void distanceUnitCostStringNodeDataCostModelSpfR() {
-    // Parse the input.
-    BracketStringInputParser parser = new BracketStringInputParser();
-    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
-    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
-    // Initialise APTED.
-    APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
-    // This cast is safe due to unit cost.
-    int result = (int)apted.computeEditDistance_spfTest(t1, t2, 1);
-    assertEquals(testCase.getD(), result);
-  }
-
-  // IDEA: Write test that triggers spf_A for each subtree pair - disallow
-  //       using spf_L and spf_R.
-
-  /**
-   * Compute minimum-cost edit mapping for a single test case and compare its
-   * cost to the correct TED value. Uses node labels with a single string value
-   * and unit cost model.
-   *
-   * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
-   */
-  @Test
-  public void mappingCostUnitCostStringNodeDataCostModel() {
-    // Parse the input.
-    BracketStringInputParser parser = new BracketStringInputParser();
-    Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
-    Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
-    // Initialise APTED.
-    APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
-    // Although we don't need TED value yet, TED must be computed before the
-    // mapping. This cast is safe due to unit cost.
-    apted.computeEditDistance(t1, t2);
-    // Get TED value corresponding to the computed mapping.
-    LinkedList<int[]> mapping = apted.computeEditMapping();
-    // This cast is safe due to unit cost.
-    int result = (int)apted.mappingCost(mapping);
-    assertEquals(testCase.getD(), result);
-  }
+    /**
+     * Compute minimum-cost edit mapping for a single test case and compare its
+     * cost to the correct TED value. Uses node labels with a single string value
+     * and unit cost model.
+     *
+     * @see node.StringNodeData
+     * @see costmodel.StringUnitCostModel
+     */
+    @Test
+    public void mappingCostUnitCostStringNodeDataCostModel() {
+        // Parse the input.
+        BracketStringInputParser parser = new BracketStringInputParser();
+        Node<StringNodeData> t1 = parser.fromString(testCase.getT1());
+        Node<StringNodeData> t2 = parser.fromString(testCase.getT2());
+        // Initialise APTED.
+        APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
+        // Although we don't need TED value yet, TED must be computed before the
+        // mapping. This cast is safe due to unit cost.
+        apted.computeEditDistance(t1, t2);
+        // Get TED value corresponding to the computed mapping.
+        LinkedList<int[]> mapping = apted.computeEditMapping();
+        // This cast is safe due to unit cost.
+        int result = (int) apted.mappingCost(mapping);
+        assertEquals(testCase.getD(), result);
+    }
 
 }

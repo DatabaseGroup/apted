@@ -33,12 +33,12 @@ import node.Node;
  */
 public interface InputParser<D> {
 
-  /**
-   * Converst the input tree passed as string (e.g., bracket notation, XML)
-   * into the tree structure.
-   *
-   * @param s input tree as string.
-   * @return tree structure.
-   */
-  public Node<D> fromString(String s);
+    /**
+     * Converst the input tree passed as string (e.g., bracket notation, XML)
+     * into the tree structure.
+     *
+     * @param s input tree as string.
+     * @return tree structure.
+     */
+    Node<D> fromString(String s);
 }
