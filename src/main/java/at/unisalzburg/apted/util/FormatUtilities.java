@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-package util;
+package at.unisalzburg.apted.util;
 
 import java.util.*;
 
@@ -259,7 +259,7 @@ public class FormatUtilities
         }
     }
 
-    public static String parseTree(String s, Vector children)
+    public static String parseTree(String s, List<String> children)
     {
         children.clear();
         if(s != null && s.length() > 0 && s.startsWith("{") && s.endsWith("}"))

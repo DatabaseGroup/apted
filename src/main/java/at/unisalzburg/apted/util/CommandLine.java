@@ -21,21 +21,20 @@
  * SOFTWARE.
  */
 
-package util;
+package at.unisalzburg.apted.util;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 
-import distance.APTED;
-import node.Node;
-import node.StringNodeData;
-import costmodel.CostModel;
-import costmodel.StringUnitCostModel;
-import parser.InputParser;
-import parser.BracketStringInputParser;
+import at.unisalzburg.apted.distance.APTED;
+import at.unisalzburg.apted.node.Node;
+import at.unisalzburg.apted.node.StringNodeData;
+import at.unisalzburg.apted.costmodel.CostModel;
+import at.unisalzburg.apted.costmodel.StringUnitCostModel;
+import at.unisalzburg.apted.parser.InputParser;
+import at.unisalzburg.apted.parser.BracketStringInputParser;
 
 /**
  * This is the command line interface for executing APTED algorithm.

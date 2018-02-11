@@ -1,5 +1,13 @@
 apply plugin: 'java'
 
+sourceCompatibility = '1.8'
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.5.1'
+    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+}
+
 // Dependency repository.
 repositories {
     mavenCentral()
@@ -7,14 +15,14 @@ repositories {
 
 // Project dependencies. Currently only for unit tests.
 dependencies {
-    testCompile 'junit:junit:4.12',
-                'com.google.code.gson:gson:2.8.0'
+    testCompile 'junit:junit:4.12';
+    testCompile 'com.google.code.gson:gson:2.8.0'
 }
 
 // Specify main class for the JAR file.
 jar {
     manifest {
-        attributes 'Main-Class': 'util.CommandLine'
+        attributes 'Main-Class': 'at.unisalzburg.apted.util.CommandLine'
     }
 }
 

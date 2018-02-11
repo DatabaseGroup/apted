@@ -34,11 +34,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import com.google.gson.Gson;
 import static org.junit.Assert.assertEquals;
-import distance.APTED;
-import parser.BracketStringInputParser;
-import node.Node;
-import node.StringNodeData;
-import costmodel.StringUnitCostModel;
+import at.unisalzburg.apted.distance.APTED;
+import at.unisalzburg.apted.parser.BracketStringInputParser;
+import at.unisalzburg.apted.node.Node;
+import at.unisalzburg.apted.node.StringNodeData;
+import at.unisalzburg.apted.costmodel.StringUnitCostModel;
+import java.util.List;
 
 /**
  * Correctness unit tests of distance and mapping computation.
@@ -184,8 +185,8 @@ public class CorrectnessTest {
    * Compute TED for a single test case and compare to the correct value. Uses
    * node labels with a single string value and unit cost model.
    *
-   * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
+   * @see at.unisalzburg.apted.node.StringNodeData
+   * @see at.unisalzburg.apted.costmodel.StringUnitCostModel
    */
   @Test
   public void distanceUnitCostStringNodeDataCostModel() {
@@ -210,8 +211,8 @@ public class CorrectnessTest {
    * <p>Triggers spf_L to execute. The strategy is fixed to left paths in the
    * left-hand tree.
    *
-   * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
+   * @see at.unisalzburg.apted.node.StringNodeData
+   * @see at.unisalzburg.apted.costmodel.StringUnitCostModel
    */
   @Test
   public void distanceUnitCostStringNodeDataCostModelSpfL() {
@@ -233,8 +234,8 @@ public class CorrectnessTest {
    *<p>Triggers spf_R to execute. The strategy is fixed to right paths in the
    * left-hand tree.
    *
-   * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
+   * @see at.unisalzburg.apted.node.StringNodeData
+   * @see at.unisalzburg.apted.costmodel.StringUnitCostModel
    */
   @Test
   public void distanceUnitCostStringNodeDataCostModelSpfR() {
@@ -257,8 +258,8 @@ public class CorrectnessTest {
    * cost to the correct TED value. Uses node labels with a single string value
    * and unit cost model.
    *
-   * @see node.StringNodeData
-   * @see costmodel.StringUnitCostModel
+   * @see at.unisalzburg.apted.node.StringNodeData
+   * @see at.unisalzburg.apted.costmodel.StringUnitCostModel
    */
   @Test
   public void mappingCostUnitCostStringNodeDataCostModel() {
@@ -272,7 +273,7 @@ public class CorrectnessTest {
     // mapping. This cast is safe due to unit cost.
     apted.computeEditDistance(t1, t2);
     // Get TED value corresponding to the computed mapping.
-    LinkedList<int[]> mapping = apted.computeEditMapping();
+    List<int[]> mapping = apted.computeEditMapping();
     // This cast is safe due to unit cost.
     int result = (int)apted.mappingCost(mapping);
     assertEquals(testCase.getD(), result);

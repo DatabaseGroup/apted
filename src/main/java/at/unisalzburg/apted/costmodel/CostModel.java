@@ -21,45 +21,24 @@
  * SOFTWARE.
  */
 
-package costmodel;
+package at.unisalzburg.apted.costmodel;
 
-import costmodel.CostModel;
-import node.Node;
-import node.StringNodeData;
+import at.unisalzburg.apted.node.Node;
 
 /**
- * This is a cost model defined on {@link node.StringNodeData} with a fixed cost
- * per edit operation.
+ * This interface specifies the methods to implement for a custom cost model.
+ * The methods represent the costs of edit operations (delete, insert, rename).
+ *
+ * <p>If the cost function is a metric, the tree edit distance is a metric too.
+ *
+ * <p>However, the cost function does not have to be a metric - the costs of
+ * deletion, insertion and rename can be arbitrary.
+ *
+ * <p>IMPORTANT: Mind the <b>float</b> type use for costs.
+ *
+ * @param <D> type of node data on which the cost model is defined.
  */
-public class PerEditOperationStringNodeDataCostModel implements CostModel<StringNodeData> {
-
-  /**
-   * Stores the cost of deleting a node.
-   */
-  private float delCost;
-
-  /**
-   * Stores the cost of inserting a node.
-   */
-  private float insCost;
-
-  /**
-   * Stores the cost of mapping two nodes (renaming their labels).
-   */
-  private float renCost;
-
-  /**
-   * Initialises the cost model with the passed edit operation costs.
-   *
-   * @param delCost deletion cost.
-   * @param insCost insertion cost.
-   * @param renCost rename cost.
-   */
-  public PerEditOperationStringNodeDataCostModel(float delCost, float insCost, float renCost) {
-    this.delCost = delCost;
-    this.insCost = insCost;
-    this.renCost = renCost;
-  }
+public interface CostModel<D> {
 
   /**
    * Calculates the cost of deleting a node.
@@ -67,9 +46,7 @@ public class PerEditOperationStringNodeDataCostModel implements CostModel<String
    * @param n the node considered to be deleted.
    * @return the cost of deleting node n.
    */
-  public float del(Node<StringNodeData> n) {
-    return delCost;
-  }
+  public float del(Node<D> n);
 
   /**
    * Calculates the cost of inserting a node.
@@ -77,18 +54,14 @@ public class PerEditOperationStringNodeDataCostModel implements CostModel<String
    * @param n the node considered to be inserted.
    * @return the cost of inserting node n.
    */
-  public float ins(Node<StringNodeData> n) {
-    return insCost;
-  }
+  public float ins(Node<D> n);
 
   /**
-   * Calculates the cost of renaming the string labels of two nodes.
+   * Calculates the cost of renaming (mapping) two nodes.
    *
    * @param n1 the source node of rename.
    * @param n2 the destination node of rename.
-   * @return the cost of renaming node n1 to n2.
+   * @return the cost of renaming (mapping) node n1 to n2.
    */
-  public float ren(Node<StringNodeData> n1, Node<StringNodeData> n2) {
-    return (n1.getNodeData().getLabel().equals(n2.getNodeData().getLabel())) ? 0.0f : renCost;
-  }
+  public float ren(Node<D> n1, Node<D> n2);
 }

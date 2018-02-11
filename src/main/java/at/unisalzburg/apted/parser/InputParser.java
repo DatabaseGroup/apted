@@ -21,9 +21,9 @@
  * SOFTWARE.
  */
 
-package parser;
+package at.unisalzburg.apted.parser;
 
-import node.Node;
+import at.unisalzburg.apted.node.Node;
 
 /**
  * This interface specifies methods (currently only one) that must be
