@@ -35,8 +35,8 @@ import costmodel.CostModel;
  * all possible TED mappings between two trees and calculated their minimal
  * cost.
  *
- * @param C type of cost model.
- * @param D type of node data.
+ * @param <C></C> type of cost model.
+ * @param <D></D> type of node data.
  */
 public class AllPossibleMappingsTED<C extends CostModel, D> {
 

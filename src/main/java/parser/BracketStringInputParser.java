@@ -23,6 +23,7 @@
 
 package parser;
 
+import java.util.List;
 import java.util.Vector;
 import util.FormatUtilities;
 import node.Node;
@@ -54,9 +55,9 @@ public class BracketStringInputParser implements InputParser<StringNodeData> {
   public Node<StringNodeData> fromString(String s) {
     s = s.substring(s.indexOf("{"), s.lastIndexOf("}") + 1);
     Node<StringNodeData> node = new Node<StringNodeData>(new StringNodeData(FormatUtilities.getRoot(s)));
-    Vector c = FormatUtilities.getChildren(s);
+    List<String> c = FormatUtilities.getChildren(s);
     for(int i = 0; i < c.size(); i++)
-        node.addChild(fromString((String)c.elementAt(i)));
+        node.addChild(fromString(c.get(i)));
     return node;
   }
 }

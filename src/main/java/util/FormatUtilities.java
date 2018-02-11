@@ -23,10 +23,7 @@
 
 package util;
 
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.Random;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * Various formatting utilities.
@@ -237,11 +234,11 @@ public class FormatUtilities
         }
     }
 
-    public static Vector getChildren(String s)
+    public static List<String> getChildren(String s)
     {
         if(s != null && s.length() > 0 && s.startsWith("{") && s.endsWith("}"))
         {
-            Vector children = new Vector();
+            List<String> children = new ArrayList<>();
             int end = s.indexOf('{', 1);
             if(end == -1)
                 return children;

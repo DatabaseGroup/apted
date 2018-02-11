@@ -25,6 +25,7 @@ package distance;
 
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Stack;
 import node.Node;
 import node.NodeIndexer;
@@ -1673,7 +1674,7 @@ public class APTED<C extends CostModel, D> {
   // TODO: Before computing the mapping, verify if TED has been computed.
   //       Mapping computation should trigger distance computation if
   //       necessary.
-  public LinkedList<int[]> computeEditMapping() {
+  public List<int[]> computeEditMapping() {
 
     // Initialize tree and forest distance arrays.
     // Arrays for subtree distrances is not needed because the distances
@@ -1803,7 +1804,7 @@ public class APTED<C extends CostModel, D> {
    * @param mapping an edit mapping.
    * @return cost of edit mapping.
    */
-  public float mappingCost(LinkedList<int[]> mapping) {
+  public float mappingCost(List<int[]> mapping) {
     float cost = 0.0f;
     for (int i = 0; i < mapping.size(); i++) {
       if (mapping.get(i)[0] == 0) { // Insertion.
