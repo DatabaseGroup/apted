@@ -21,13 +21,13 @@
  * SOFTWARE.
  */
 
-package at.unisalzburg.apted.parser;
+package at.unisalzburg.dbresearch.apted.parser;
 
 import java.util.List;
-import java.util.Vector;
-import at.unisalzburg.apted.util.FormatUtilities;
-import at.unisalzburg.apted.node.Node;
-import at.unisalzburg.apted.node.StringNodeData;
+
+import at.unisalzburg.dbresearch.apted.util.FormatUtilities;
+import at.unisalzburg.dbresearch.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.StringNodeData;
 
 // [TODO] Make this parser independent from FormatUtilities - move here relevant elements.
 

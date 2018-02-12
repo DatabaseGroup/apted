@@ -21,47 +21,50 @@
  * SOFTWARE.
  */
 
-package at.unisalzburg.apted.costmodel;
+package at.unisalzburg.dbresearch.apted.costmodel;
 
-import at.unisalzburg.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.StringNodeData;
 
 /**
- * This interface specifies the methods to implement for a custom cost model.
- * The methods represent the costs of edit operations (delete, insert, rename).
+ * This is a unit-nost model defined on string labels.
  *
- * <p>If the cost function is a metric, the tree edit distance is a metric too.
- *
- * <p>However, the cost function does not have to be a metric - the costs of
- * deletion, insertion and rename can be arbitrary.
- *
- * <p>IMPORTANT: Mind the <b>float</b> type use for costs.
- *
- * @param <D> type of node data on which the cost model is defined.
+ * @see CostModel
+ * @see StringNodeData
  */
-public interface CostModel<D> {
+ // TODO: Use a label dictionary to encode string labels with integers for
+ //       faster rename cost computation.
+public class StringUnitCostModel implements CostModel<StringNodeData> {
 
   /**
    * Calculates the cost of deleting a node.
    *
-   * @param n the node considered to be deleted.
-   * @return the cost of deleting node n.
+   * @param n a node considered to be deleted.
+   * @return {@code 1} - a fixed cost of deleting a node.
    */
-  public float del(Node<D> n);
+  public float del(Node<StringNodeData> n) {
+    return 1.0f;
+  }
 
   /**
    * Calculates the cost of inserting a node.
    *
-   * @param n the node considered to be inserted.
-   * @return the cost of inserting node n.
+   * @param n a node considered to be inserted.
+   * @return {@code 1} - a fixed cost of inserting a node.
    */
-  public float ins(Node<D> n);
+  public float ins(Node<StringNodeData> n) {
+    return 1.0f;
+  }
 
   /**
-   * Calculates the cost of renaming (mapping) two nodes.
+   * Calculates the cost of renaming the label of the source node to the label
+   * of the destination node.
    *
-   * @param n1 the source node of rename.
-   * @param n2 the destination node of rename.
-   * @return the cost of renaming (mapping) node n1 to n2.
+   * @param n1 a source node for rename.
+   * @param n2 a destination node for rename.
+   * @return {@code 1} if labels of renamed nodes are equal, and {@code 0} otherwise.
    */
-  public float ren(Node<D> n1, Node<D> n2);
+  public float ren(Node<StringNodeData> n1, Node<StringNodeData> n2) {
+    return (n1.getNodeData().getLabel().equals(n2.getNodeData().getLabel())) ? 0.0f : 1.0f;
+  }
 }

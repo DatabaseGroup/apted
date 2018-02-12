@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-package at.unisalzburg.apted.node;
+package at.unisalzburg.dbresearch.apted.node;
 
 /**
  * Represents a node label that consists of a single string value. Such label

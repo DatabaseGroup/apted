@@ -21,9 +21,9 @@
  * SOFTWARE.
  */
 
-package at.unisalzburg.apted.parser;
+package at.unisalzburg.dbresearch.apted.parser;
 
-import at.unisalzburg.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.Node;
 
 /**
  * This interface specifies methods (currently only one) that must be

@@ -23,22 +23,21 @@
 
 import java.util.Collection;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import org.junit.Before;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import com.google.gson.Gson;
 import static org.junit.Assert.assertEquals;
-import at.unisalzburg.apted.distance.APTED;
-import at.unisalzburg.apted.parser.BracketStringInputParser;
-import at.unisalzburg.apted.node.Node;
-import at.unisalzburg.apted.node.StringNodeData;
-import at.unisalzburg.apted.costmodel.StringUnitCostModel;
+import at.unisalzburg.dbresearch.apted.distance.APTED;
+import at.unisalzburg.dbresearch.apted.parser.BracketStringInputParser;
+import at.unisalzburg.dbresearch.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.StringNodeData;
+import at.unisalzburg.dbresearch.apted.costmodel.StringUnitCostModel;
 import java.util.List;
 
 /**
@@ -185,8 +184,8 @@ public class CorrectnessTest {
    * Compute TED for a single test case and compare to the correct value. Uses
    * node labels with a single string value and unit cost model.
    *
-   * @see at.unisalzburg.apted.node.StringNodeData
-   * @see at.unisalzburg.apted.costmodel.StringUnitCostModel
+   * @see StringNodeData
+   * @see StringUnitCostModel
    */
   @Test
   public void distanceUnitCostStringNodeDataCostModel() {
@@ -211,8 +210,8 @@ public class CorrectnessTest {
    * <p>Triggers spf_L to execute. The strategy is fixed to left paths in the
    * left-hand tree.
    *
-   * @see at.unisalzburg.apted.node.StringNodeData
-   * @see at.unisalzburg.apted.costmodel.StringUnitCostModel
+   * @see StringNodeData
+   * @see StringUnitCostModel
    */
   @Test
   public void distanceUnitCostStringNodeDataCostModelSpfL() {
@@ -234,8 +233,8 @@ public class CorrectnessTest {
    *<p>Triggers spf_R to execute. The strategy is fixed to right paths in the
    * left-hand tree.
    *
-   * @see at.unisalzburg.apted.node.StringNodeData
-   * @see at.unisalzburg.apted.costmodel.StringUnitCostModel
+   * @see StringNodeData
+   * @see StringUnitCostModel
    */
   @Test
   public void distanceUnitCostStringNodeDataCostModelSpfR() {
@@ -258,8 +257,8 @@ public class CorrectnessTest {
    * cost to the correct TED value. Uses node labels with a single string value
    * and unit cost model.
    *
-   * @see at.unisalzburg.apted.node.StringNodeData
-   * @see at.unisalzburg.apted.costmodel.StringUnitCostModel
+   * @see StringNodeData
+   * @see StringUnitCostModel
    */
   @Test
   public void mappingCostUnitCostStringNodeDataCostModel() {

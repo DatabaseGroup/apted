@@ -15,14 +15,14 @@ repositories {
 
 // Project dependencies. Currently only for unit tests.
 dependencies {
-    testCompile 'junit:junit:4.12';
-    testCompile 'com.google.code.gson:gson:2.8.0'
+    testCompile 'junit:junit:4.12',
+                'com.google.code.gson:gson:2.8.0'
 }
 
 // Specify main class for the JAR file.
 jar {
     manifest {
-        attributes 'Main-Class': 'at.unisalzburg.apted.util.CommandLine'
+        attributes 'Main-Class': 'at.unisalzburg.dbresearch.apted.util.CommandLine'
     }
 }
 

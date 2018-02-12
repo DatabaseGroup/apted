@@ -21,18 +21,16 @@
  * SOFTWARE.
  */
 
-package at.unisalzburg.apted.node;
+package at.unisalzburg.dbresearch.apted.node;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Arrays;
 import java.util.Iterator;
-import at.unisalzburg.apted.node.Node;
-import at.unisalzburg.apted.costmodel.CostModel;
+
+import at.unisalzburg.dbresearch.apted.costmodel.CostModel;
 
 /**
  * Indexes nodes of the input tree to the algorithm that is already parsed to
- * tree structure using {@link at.unisalzburg.apted.node.Node} class. Stores various indices on
+ * tree structure using {@link Node} class. Stores various indices on
  * nodes required for efficient computation of APTED [1,2]. Additionally, it
  * stores
  * single-value properties of the tree.
@@ -57,7 +55,7 @@ import at.unisalzburg.apted.costmodel.CostModel;
  *
  * @param <D> type of node data.
  * @param <C> type of cost model.
- * @see at.unisalzburg.apted.node.Node
+ * @see Node
  * @see parser.InputParser
  */
 public class NodeIndexer<D, C extends CostModel> {
@@ -70,7 +68,7 @@ public class NodeIndexer<D, C extends CostModel> {
    * Index from left-to-right preorder id of node n (starting with {@code 0})
    * to Node object corresponding to n. Used for cost of edit operations.
    *
-   * @see at.unisalzburg.apted.node.Node
+   * @see Node
    */
   public Node<D> preL_to_node[];
 
@@ -507,22 +505,22 @@ public class NodeIndexer<D, C extends CostModel> {
   }
 
   /**
-   * An abbreviation that uses indices to retrieve pointer to {@link at.unisalzburg.apted.node.Node}
+   * An abbreviation that uses indices to retrieve pointer to {@link Node}
    * of the given node.
    *
    * @param postL left-to-right postorder id of a node.
-   * @return {@link at.unisalzburg.apted.node.Node} corresponding to postL.
+   * @return {@link Node} corresponding to postL.
    */
   public Node<D> postL_to_node(int postL) {
     return preL_to_node[postL_to_preL[postL]];
   }
 
   /**
-   * An abbreviation that uses indices to retrieve pointer to {@link at.unisalzburg.apted.node.Node}
+   * An abbreviation that uses indices to retrieve pointer to {@link Node}
    * of the given node.
    *
    * @param postR right-to-left postorder id of a node.
-   * @return {@link at.unisalzburg.apted.node.Node} corresponding to postR.
+   * @return {@link Node} corresponding to postR.
    */
   public Node<D> postR_to_node(int postR) {
     return preL_to_node[postR_to_preL[postR]];

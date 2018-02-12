@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 
-package at.unisalzburg.apted.util;
+package at.unisalzburg.dbresearch.apted.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;

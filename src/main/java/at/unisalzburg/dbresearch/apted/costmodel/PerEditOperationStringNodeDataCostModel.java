@@ -21,14 +21,13 @@
  * SOFTWARE.
  */
 
-package at.unisalzburg.apted.costmodel;
+package at.unisalzburg.dbresearch.apted.costmodel;
 
-import at.unisalzburg.apted.costmodel.CostModel;
-import at.unisalzburg.apted.node.Node;
-import at.unisalzburg.apted.node.StringNodeData;
+import at.unisalzburg.dbresearch.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.StringNodeData;
 
 /**
- * This is a cost model defined on {@link at.unisalzburg.apted.node.StringNodeData} with a fixed cost
+ * This is a cost model defined on {@link StringNodeData} with a fixed cost
  * per edit operation.
  */
 public class PerEditOperationStringNodeDataCostModel implements CostModel<StringNodeData> {
