@@ -21,12 +21,13 @@
  * SOFTWARE.
  */
 
-package parser;
+package at.unisalzburg.dbresearch.apted.parser;
 
-import java.util.Vector;
-import util.FormatUtilities;
-import node.Node;
-import node.StringNodeData;
+import java.util.List;
+
+import at.unisalzburg.dbresearch.apted.util.FormatUtilities;
+import at.unisalzburg.dbresearch.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.StringNodeData;
 
 // [TODO] Make this parser independent from FormatUtilities - move here relevant elements.
 
@@ -54,9 +55,9 @@ public class BracketStringInputParser implements InputParser<StringNodeData> {
   public Node<StringNodeData> fromString(String s) {
     s = s.substring(s.indexOf("{"), s.lastIndexOf("}") + 1);
     Node<StringNodeData> node = new Node<StringNodeData>(new StringNodeData(FormatUtilities.getRoot(s)));
-    Vector c = FormatUtilities.getChildren(s);
+    List<String> c = FormatUtilities.getChildren(s);
     for(int i = 0; i < c.size(); i++)
-        node.addChild(fromString((String)c.elementAt(i)));
+        node.addChild(fromString(c.get(i)));
     return node;
   }
 }

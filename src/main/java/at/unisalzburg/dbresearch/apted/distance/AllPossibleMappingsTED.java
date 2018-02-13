@@ -21,36 +21,36 @@
  * SOFTWARE.
  */
 
-package distance;
+package at.unisalzburg.dbresearch.apted.distance;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import node.Node;
-import node.NodeIndexer;
-import costmodel.CostModel;
+import at.unisalzburg.dbresearch.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.NodeIndexer;
+import at.unisalzburg.dbresearch.apted.costmodel.CostModel;
 
 /**
  * Implements an exponential algorithm for the tree edit distance. It computes
  * all possible TED mappings between two trees and calculated their minimal
  * cost.
  *
- * @param C type of cost model.
- * @param D type of node data.
+ * @param <C> type of cost model.
+ * @param <D> type of node data.
  */
 public class AllPossibleMappingsTED<C extends CostModel, D> {
 
   /**
    * Indexer of the source tree.
    *
-   * @see node.NodeIndexer
+   * @see NodeIndexer
    */
   private NodeIndexer it1;
 
   /**
    * Indexer of the destination tree.
    *
-   * @see node.NodeIndexer
+   * @see NodeIndexer
    */
   private NodeIndexer it2;
 

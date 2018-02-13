@@ -21,74 +21,50 @@
  * SOFTWARE.
  */
 
-package costmodel;
+package at.unisalzburg.dbresearch.apted.costmodel;
 
-import costmodel.CostModel;
-import node.Node;
-import node.StringNodeData;
+import at.unisalzburg.dbresearch.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.StringNodeData;
 
 /**
- * This is a cost model defined on {@link node.StringNodeData} with a fixed cost
- * per edit operation.
+ * This is a unit-nost model defined on string labels.
+ *
+ * @see CostModel
+ * @see StringNodeData
  */
-public class PerEditOperationStringNodeDataCostModel implements CostModel<StringNodeData> {
-
-  /**
-   * Stores the cost of deleting a node.
-   */
-  private float delCost;
-
-  /**
-   * Stores the cost of inserting a node.
-   */
-  private float insCost;
-
-  /**
-   * Stores the cost of mapping two nodes (renaming their labels).
-   */
-  private float renCost;
-
-  /**
-   * Initialises the cost model with the passed edit operation costs.
-   *
-   * @param delCost deletion cost.
-   * @param insCost insertion cost.
-   * @param renCost rename cost.
-   */
-  public PerEditOperationStringNodeDataCostModel(float delCost, float insCost, float renCost) {
-    this.delCost = delCost;
-    this.insCost = insCost;
-    this.renCost = renCost;
-  }
+ // TODO: Use a label dictionary to encode string labels with integers for
+ //       faster rename cost computation.
+public class StringUnitCostModel implements CostModel<StringNodeData> {
 
   /**
    * Calculates the cost of deleting a node.
    *
-   * @param n the node considered to be deleted.
-   * @return the cost of deleting node n.
+   * @param n a node considered to be deleted.
+   * @return {@code 1} - a fixed cost of deleting a node.
    */
   public float del(Node<StringNodeData> n) {
-    return delCost;
+    return 1.0f;
   }
 
   /**
    * Calculates the cost of inserting a node.
    *
-   * @param n the node considered to be inserted.
-   * @return the cost of inserting node n.
+   * @param n a node considered to be inserted.
+   * @return {@code 1} - a fixed cost of inserting a node.
    */
   public float ins(Node<StringNodeData> n) {
-    return insCost;
+    return 1.0f;
   }
 
   /**
-   * Calculates the cost of renaming the string labels of two nodes.
+   * Calculates the cost of renaming the label of the source node to the label
+   * of the destination node.
    *
-   * @param n1 the source node of rename.
-   * @param n2 the destination node of rename.
-   * @return the cost of renaming node n1 to n2.
+   * @param n1 a source node for rename.
+   * @param n2 a destination node for rename.
+   * @return {@code 1} if labels of renamed nodes are equal, and {@code 0} otherwise.
    */
   public float ren(Node<StringNodeData> n1, Node<StringNodeData> n2) {
-    return (n1.getNodeData().getLabel().equals(n2.getNodeData().getLabel())) ? 0.0f : renCost;
+    return (n1.getNodeData().getLabel().equals(n2.getNodeData().getLabel())) ? 0.0f : 1.0f;
   }
 }

@@ -23,30 +23,29 @@
 
 import java.util.Collection;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import org.junit.Before;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import com.google.gson.Gson;
 import static org.junit.Assert.assertEquals;
-import distance.APTED;
-import distance.AllPossibleMappingsTED;
-import parser.BracketStringInputParser;
-import node.Node;
-import node.StringNodeData;
-import costmodel.PerEditOperationStringNodeDataCostModel;
+import at.unisalzburg.dbresearch.apted.distance.APTED;
+import at.unisalzburg.dbresearch.apted.distance.AllPossibleMappingsTED;
+import at.unisalzburg.dbresearch.apted.parser.BracketStringInputParser;
+import at.unisalzburg.dbresearch.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.StringNodeData;
+import at.unisalzburg.dbresearch.apted.costmodel.PerEditOperationStringNodeDataCostModel;
 
 /**
  * Correctness unit tests of distance computation for node labels with a single
  * string value and per-edit-operation cost model.
  *
- * @see node.StringNodeData
- * @see costmodel.PerEditOperationStringNodeDataCostModel
+ * @see StringNodeData
+ * @see PerEditOperationStringNodeDataCostModel
  */
 @RunWith(Parameterized.class)
 public class PerEditOperationCorrectnessTest {
@@ -171,9 +170,9 @@ public class PerEditOperationCorrectnessTest {
    * <p>The costs of edit operations are set to some example values different
    * than in the unit cost model.
    *
-   * @see node.StringNodeData
-   * @see costmodel.PerEditOperationStringNodeDataCostModel
-   * @see distance.AllPossibleMappingsTED
+   * @see StringNodeData
+   * @see PerEditOperationStringNodeDataCostModel
+   * @see AllPossibleMappingsTED
    */
   @Test
   public void distancePerEditOperationStringNodeDataCostModel() {

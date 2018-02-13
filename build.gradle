@@ -1,5 +1,13 @@
 apply plugin: 'java'
 
+sourceCompatibility = '1.8'
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.5.1'
+    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+}
+
 // Dependency repository.
 repositories {
     mavenCentral()
@@ -14,7 +22,7 @@ dependencies {
 // Specify main class for the JAR file.
 jar {
     manifest {
-        attributes 'Main-Class': 'util.CommandLine'
+        attributes 'Main-Class': 'at.unisalzburg.dbresearch.apted.util.CommandLine'
     }
 }
 

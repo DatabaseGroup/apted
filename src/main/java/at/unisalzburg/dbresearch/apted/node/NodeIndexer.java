@@ -21,18 +21,16 @@
  * SOFTWARE.
  */
 
-package node;
+package at.unisalzburg.dbresearch.apted.node;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Arrays;
 import java.util.Iterator;
-import node.Node;
-import costmodel.CostModel;
+
+import at.unisalzburg.dbresearch.apted.costmodel.CostModel;
 
 /**
  * Indexes nodes of the input tree to the algorithm that is already parsed to
- * tree structure using {@link node.Node} class. Stores various indices on
+ * tree structure using {@link Node} class. Stores various indices on
  * nodes required for efficient computation of APTED [1,2]. Additionally, it
  * stores
  * single-value properties of the tree.
@@ -57,7 +55,7 @@ import costmodel.CostModel;
  *
  * @param <D> type of node data.
  * @param <C> type of cost model.
- * @see node.Node
+ * @see Node
  * @see parser.InputParser
  */
 public class NodeIndexer<D, C extends CostModel> {
@@ -70,7 +68,7 @@ public class NodeIndexer<D, C extends CostModel> {
    * Index from left-to-right preorder id of node n (starting with {@code 0})
    * to Node object corresponding to n. Used for cost of edit operations.
    *
-   * @see node.Node
+   * @see Node
    */
   public Node<D> preL_to_node[];
 
@@ -409,7 +407,7 @@ public class NodeIndexer<D, C extends CostModel> {
   /**
    * Indexes the nodes of the input tree. It computes the following indices,
    * which could not be computed immediately while traversing the tree in
-   * {@link indexNodes}: {@link #preL_to_ln}, {@link #postL_to_lld},
+   * {@link #indexNodes(Node, int)}}: {@link #preL_to_ln}, {@link #postL_to_lld},
    * {@link #postR_to_rld}, {@link #preR_to_ln}.
    *
    * <p>Runs in linear time in the input tree size. Currently requires two
@@ -507,22 +505,22 @@ public class NodeIndexer<D, C extends CostModel> {
   }
 
   /**
-   * An abbreviation that uses indices to retrieve pointer to {@link node.Node}
+   * An abbreviation that uses indices to retrieve pointer to {@link Node}
    * of the given node.
    *
    * @param postL left-to-right postorder id of a node.
-   * @return {@link node.Node} corresponding to postL.
+   * @return {@link Node} corresponding to postL.
    */
   public Node<D> postL_to_node(int postL) {
     return preL_to_node[postL_to_preL[postL]];
   }
 
   /**
-   * An abbreviation that uses indices to retrieve pointer to {@link node.Node}
+   * An abbreviation that uses indices to retrieve pointer to {@link Node}
    * of the given node.
    *
    * @param postR right-to-left postorder id of a node.
-   * @return {@link node.Node} corresponding to postR.
+   * @return {@link Node} corresponding to postR.
    */
   public Node<D> postR_to_node(int postR) {
     return preL_to_node[postR_to_preL[postR]];

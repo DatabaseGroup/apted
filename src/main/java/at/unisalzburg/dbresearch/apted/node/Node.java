@@ -21,13 +21,14 @@
  * SOFTWARE.
  */
 
-package node;
+package at.unisalzburg.dbresearch.apted.node;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This is a recursive representation of an ordered tree. Each node stores a
- * vector of pointers to its children. The order of children is significant and
+ * list of pointers to its children. The order of children is significant and
  * must be observed while implmeneting a custom input parser.
  *
  * @param <D> the type of node data (node label).
@@ -37,7 +38,7 @@ public class Node<D> {
   /**
    * Information associated to and stored at each node. This can be anything
    * and depends on the application, for example, string label, key-value pair,
-   * vector of values, etc.
+   * list of values, etc.
    */
   private D nodeData;
 
@@ -45,16 +46,16 @@ public class Node<D> {
    * Array of pointers to this node's children. The order of children is
    * significant due to the definition of ordered trees.
    */
-  private Vector<Node<D>> children;
+  private List<Node<D>> children;
 
   /**
-   * Constructs a new node with the passed node data and an empty vector of
+   * Constructs a new node with the passed node data and an empty list of
    * children.
    *
    * @param nodeData instance of node data (node label).
    */
   public Node(D nodeData) {
-    this.children = new Vector<Node<D>>();
+    this.children = new ArrayList<>();
     setNodeData(nodeData);
   }
 
@@ -74,7 +75,7 @@ public class Node<D> {
   }
 
   /**
-   * Adds a new child at the end of children vector. The added child will be
+   * Adds a new child at the end of children list. The added child will be
    * the last child of this node.
    *
    * @param c child node to add.
@@ -86,7 +87,7 @@ public class Node<D> {
   /**
    * Returns a string representation of the tree in bracket notation.
    *
-   * <p>IMPORTANT: Works only for nodes storing {@link node.StringNodeData}
+   * <p>IMPORTANT: Works only for nodes storing {@link StringNodeData}
    * due to using {@link node.StringNodeData#getLabel()}.
    *
    * @return tree in bracket notation.
@@ -119,11 +120,11 @@ public class Node<D> {
   }
 
   /**
-   * Returns the vector with all node's children.
+   * Returns the list with all node's children.
    *
    * @return children of the node.
    */
-  public Vector<Node<D>> getChildren() {
+  public List<Node<D>> getChildren() {
     return children;
   }
 
