@@ -36,9 +36,11 @@ import node.Node;
  *
  * <p>IMPORTANT: Mind the <b>float</b> type use for costs.
  *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.costmodel.CostModel}
+ *
  * @param <D> type of node data on which the cost model is defined.
  */
-public interface CostModel<D> {
+@Deprecated public interface CostModel<D> {
 
   /**
    * Calculates the cost of deleting a node.

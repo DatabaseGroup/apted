@@ -30,8 +30,10 @@ import node.StringNodeData;
 /**
  * This is a cost model defined on {@link node.StringNodeData} with a fixed cost
  * per edit operation.
+ *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.costmodel.PerEditOperationStringNodeDataCostModel}
  */
-public class PerEditOperationStringNodeDataCostModel implements CostModel<StringNodeData> {
+@Deprecated public class PerEditOperationStringNodeDataCostModel implements CostModel<StringNodeData> {
 
   /**
    * Stores the cost of deleting a node.

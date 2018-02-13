@@ -55,12 +55,14 @@ import costmodel.CostModel;
  *      efficient. Information Systems 56. 2016.
  * </ul>
  *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.node.NodeIndexer}
+ *
  * @param <D> type of node data.
  * @param <C> type of cost model.
  * @see node.Node
  * @see parser.InputParser
  */
-public class NodeIndexer<D, C extends CostModel> {
+@Deprecated public class NodeIndexer<D, C extends CostModel> {
 
   // [TODO] Be consistent in naming index variables: <FROM>_to_<TO>.
 
@@ -409,7 +411,7 @@ public class NodeIndexer<D, C extends CostModel> {
   /**
    * Indexes the nodes of the input tree. It computes the following indices,
    * which could not be computed immediately while traversing the tree in
-   * {@link indexNodes}: {@link #preL_to_ln}, {@link #postL_to_lld},
+   * {@link #indexNodes}: {@link #preL_to_ln}, {@link #postL_to_lld},
    * {@link #postR_to_rld}, {@link #preR_to_ln}.
    *
    * <p>Runs in linear time in the input tree size. Currently requires two

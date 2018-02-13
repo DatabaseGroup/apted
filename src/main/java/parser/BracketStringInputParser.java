@@ -38,10 +38,12 @@ import node.StringNodeData;
  * in tree {A{B{X}{Y}{F}}{C}} the root node has label A and two children with
  * labels B and C. Node with label B has three children with labels X, Y, F.
  *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.parser.BracketStringInputParser}
+ *
  * @see Node
  * @see StringNodeData
  */
-public class BracketStringInputParser implements InputParser<StringNodeData> {
+@Deprecated public class BracketStringInputParser implements InputParser<StringNodeData> {
 
   /**
    * Parses the input tree as a string and converts it to our tree

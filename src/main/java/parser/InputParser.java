@@ -29,9 +29,11 @@ import node.Node;
  * This interface specifies methods (currently only one) that must be
  * implemented for a custom input parser.
  *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.parser.InputParser}
+ *
  * @param <D> the type of node data.
  */
-public interface InputParser<D> {
+@Deprecated public interface InputParser<D> {
 
   /**
    * Converst the input tree passed as string (e.g., bracket notation, XML)

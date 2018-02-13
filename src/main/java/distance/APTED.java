@@ -53,10 +53,12 @@ import costmodel.CostModel;
  *      Distance. PVLDB 5(4). 2011.
  * </ul>
  *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.distance.APTED}
+ *
  * @param <C> type of cost model.
  * @param <D> type of node data.
  */
-public class APTED<C extends CostModel, D> {
+@Deprecated public class APTED<C extends CostModel, D> {
 
   /**
    * Identifier of left path type = {@value LEFT};

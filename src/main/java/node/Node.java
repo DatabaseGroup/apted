@@ -30,9 +30,11 @@ import java.util.Vector;
  * vector of pointers to its children. The order of children is significant and
  * must be observed while implmeneting a custom input parser.
  *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.node.Node}
+ *
  * @param <D> the type of node data (node label).
  */
-public class Node<D> {
+@Deprecated public class Node<D> {
 
   /**
    * Information associated to and stored at each node. This can be anything

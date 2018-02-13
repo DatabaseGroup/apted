@@ -30,12 +30,14 @@ import node.StringNodeData;
 /**
  * This is a unit-nost model defined on string labels.
  *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.costmodel.StringUnitCostModel}
+ *
  * @see CostModel
  * @see StringNodeData
  */
  // TODO: Use a label dictionary to encode string labels with integers for
  //       faster rename cost computation.
-public class StringUnitCostModel implements CostModel<StringNodeData> {
+@Deprecated public class StringUnitCostModel implements CostModel<StringNodeData> {
 
   /**
    * Calculates the cost of deleting a node.

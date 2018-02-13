@@ -35,10 +35,12 @@ import costmodel.CostModel;
  * all possible TED mappings between two trees and calculated their minimal
  * cost.
  *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.distance.AllPossibleMappingsTED}
+ *
  * @param C type of cost model.
  * @param D type of node data.
  */
-public class AllPossibleMappingsTED<C extends CostModel, D> {
+@Deprecated public class AllPossibleMappingsTED<C extends CostModel, D> {
 
   /**
    * Indexer of the source tree.

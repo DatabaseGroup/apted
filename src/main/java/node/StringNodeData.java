@@ -27,9 +27,11 @@ package node;
  * Represents a node label that consists of a single string value. Such label
  * belongs to a node.
  *
+ * @deprecated Due to packaging update replaced by {@link at.unisalzburg.dbresearch.apted.node.StringNodeData}
+ *
  * @see Node
  */
-public class StringNodeData {
+@Deprecated public class StringNodeData {
 
   /**
    * The label of a node.
