@@ -16,6 +16,12 @@ jar {
     manifest {
         attributes 'Main-Class': 'at.unisalzburg.dbresearch.apted.util.CommandLine'
     }
+    exclude (
+        'costmodel',
+        'distance',
+        'node',
+        'parser'
+    )
 }
 
 // Include test classes and private members into javadoc.
