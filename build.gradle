@@ -14,7 +14,7 @@ dependencies {
 // Specify main class for the JAR file.
 jar {
     manifest {
-        attributes 'Main-Class': 'util.CommandLine'
+        attributes 'Main-Class': 'at.unisalzburg.dbresearch.apted.util.CommandLine'
     }
 }
 
