@@ -26,7 +26,7 @@ package at.unisalzburg.dbresearch.apted.util;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.Date;
-import java.util.LinkedList;
+import java.util.List;
 import at.unisalzburg.dbresearch.apted.distance.APTED;
 import at.unisalzburg.dbresearch.apted.node.Node;
 import at.unisalzburg.dbresearch.apted.node.StringNodeData;
@@ -222,7 +222,7 @@ public class CommandLine<C extends CostModel, P extends InputParser> {
     }
 
     if (mapping) { // TED is computed anyways.
-      LinkedList<int[]> editMapping = rted.computeEditMapping();
+      List<int[]> editMapping = rted.computeEditMapping();
       for (int[] nodeAlignment : editMapping) {
         System.out.println(nodeAlignment[0] + "->" + nodeAlignment[1]);
       }

@@ -23,11 +23,10 @@
 
 import java.util.Collection;
 import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -272,7 +271,7 @@ public class CorrectnessTest {
     // mapping. This cast is safe due to unit cost.
     apted.computeEditDistance(t1, t2);
     // Get TED value corresponding to the computed mapping.
-    LinkedList<int[]> mapping = apted.computeEditMapping();
+    List<int[]> mapping = apted.computeEditMapping();
     // This cast is safe due to unit cost.
     int result = (int)apted.mappingCost(mapping);
     assertEquals(testCase.getD(), result);
