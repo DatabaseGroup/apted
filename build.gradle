@@ -16,7 +16,7 @@ repositories {
 // Project dependencies. Currently only for unit tests.
 dependencies {
     testCompile 'junit:junit:4.12',
-                'com.google.code.gson:gson:2.8.0'
+                'com.google.code.gson:gson:2.8.2'
 }
 
 // Specify main class for the JAR file.
