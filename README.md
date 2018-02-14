@@ -9,6 +9,14 @@ algorithm [3].
 You can find more information on our Tree Edit Distance website
 http://tree-edit-distance.dbresearch.uni-salzburg.at/
 
+### Deprecated API
+
+As we've been pointed, our API had incorrect packaging causing some troubles
+(especially, the `util` package).
+We've fixed the packaging. For the sake of current users, we've left also the
+old one that we've annotated as deprecated in both, source code and javadoc.
+We're planning on removing it from the repository at some point.
+
 ## Citing APTED
 
 If you want to refer to APTED in a publication, please cite [1] and [2].
@@ -95,10 +103,15 @@ Execute `java -jar apted.jar -h` for manual and help.
 You can clone the code, compile, and build the JAR file the regular command-line
 way.
 
-We use [Gradle](https://gradle.org/) for connvenience.
+We use [Gradle](https://gradle.org/) for convenience.
 - [install Gradle](https://gradle.org/install)
 - run `gradle test` for unit tests (currently correctness tests)
 - run `gradle build` to find the `apted.jar` file in `build/libs/`
+
+### Gradle wrapper
+
+We intentionally do not put automatically generated Gradle wrapper files in the
+repository. We don't like that. However, if it helps, we've added wrapper task section to `build.gradle` file.
 
 ## Javadoc documentation
 
