@@ -34,11 +34,11 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import com.google.gson.Gson;
 import static org.junit.Assert.assertEquals;
-import distance.APTED;
-import parser.BracketStringInputParser;
-import node.Node;
-import node.StringNodeData;
-import costmodel.StringUnitCostModel;
+import at.unisalzburg.dbresearch.apted.distance.APTED;
+import at.unisalzburg.dbresearch.apted.parser.BracketStringInputParser;
+import at.unisalzburg.dbresearch.apted.node.Node;
+import at.unisalzburg.dbresearch.apted.node.StringNodeData;
+import at.unisalzburg.dbresearch.apted.costmodel.StringUnitCostModel;
 
 /**
  * Correctness unit tests of distance and mapping computation.
